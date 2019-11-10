@@ -1,10 +1,12 @@
 #![allow(dead_code)] // Cause its annoying
 
+mod config;
 mod locker;
 mod provider;
 mod update;
 mod version;
 
+use config::Verifiable;
 use locker::Locker;
 use log::info;
 use std::error::Error;
@@ -21,6 +23,10 @@ fn main() {
 
     println!("{}", std::env::current_dir().unwrap().display());
     println!("{}", working_dir().unwrap().display());
+
+    let cfg = config::load().unwrap();
+    cfg.verify().unwrap();
+    println!("{:#?}", cfg);
 }
 
 fn self_rename() {

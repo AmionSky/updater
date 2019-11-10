@@ -1,5 +1,7 @@
 mod github;
 
+pub use github::GitHubProvider;
+
 use semver::Version;
 use std::error::Error;
 
