@@ -11,7 +11,7 @@ pub struct GitHubProvider {
 impl GitHubProvider {
     /// Creates a new GitHubProvider.
     ///
-    /// `repo` should be "*user*/*repository*".
+    /// * `repo` should be "*user*/*repository*".
     pub fn new(repo: &str) -> Self {
         Self {
             url: format!("https://api.github.com/repos/{}/releases/latest", repo),
