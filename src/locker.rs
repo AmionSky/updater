@@ -55,3 +55,29 @@ impl Drop for Locker {
         let _ = std::fs::remove_file(&self.path);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn lock_unlock() {
+        let mut locker = Locker::new(lockfile());
+
+        assert!(!locker.is_locked());
+        assert!(locker.lock());
+        assert!(locker.is_locked());
+        assert!(!locker.lock());
+        assert!(locker.is_locked());
+        assert!(locker.unlock());
+        assert!(!locker.is_locked());
+        assert!(!locker.unlock());
+        assert!(!locker.is_locked());
+    }
+
+    fn lockfile() -> PathBuf {
+        let mut path = std::env::temp_dir();
+        path.push("test_lock_unlock");
+        path
+    }
+}

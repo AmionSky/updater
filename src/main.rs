@@ -32,21 +32,3 @@ fn self_rename() {
 
     println!("{}", std::env::current_exe().unwrap().display());
 }
-
-fn locker_tester(locker: &mut Locker) {
-    println!("Locker state: {}", locker.is_locked());
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input).unwrap();
-    println!("Lock result: {}", locker.lock());
-    println!("Locker state: {}", locker.is_locked());
-    println!("UnLock result: {}", locker.unlock());
-    println!("Locker state: {}", locker.is_locked());
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input).unwrap();
-    println!("UnLock result: {}", locker.unlock());
-    println!("Locker state: {}", locker.is_locked());
-    println!("Lock result: {}", locker.lock());
-    println!("Locker state: {}", locker.is_locked());
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input).unwrap();
-}
