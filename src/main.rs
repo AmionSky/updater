@@ -1,11 +1,14 @@
 #![allow(dead_code)] // Cause its annoying
 
 mod locker;
+mod provider;
 mod update;
 mod version;
 
 use locker::Locker;
 use log::info;
+use std::error::Error;
+use std::path::PathBuf;
 
 fn main() {
     simple_logger::init().unwrap();
@@ -15,6 +18,9 @@ fn main() {
         info!("Process already running!");
         std::process::exit(0);
     }
+
+    println!("{}", std::env::current_dir().unwrap().display());
+    println!("{}", working_dir().unwrap().display());
 }
 
 fn self_rename() {
@@ -31,4 +37,10 @@ fn self_rename() {
     std::fs::rename(std::env::current_exe().unwrap(), &to).unwrap();
 
     println!("{}", std::env::current_exe().unwrap().display());
+}
+
+fn working_dir() -> Result<PathBuf, Box<dyn Error>> {
+    let mut dir = std::env::current_exe()?;
+    dir.pop();
+    Ok(dir)
 }
