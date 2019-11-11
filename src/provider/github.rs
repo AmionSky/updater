@@ -1,4 +1,5 @@
 use super::{Asset, Provider};
+use crate::version;
 use semver::Version;
 use serde::Deserialize;
 use std::error::Error;
@@ -42,12 +43,10 @@ impl Provider for GitHubProvider {
     fn version(&self) -> Result<Version, Box<dyn Error>> {
         let release = self.release()?;
 
-        // Gets the version without the first character
-        // So it turns "v1.2.3" to "1.2.3"
-        // TODO: Should be configurable!
-        let version = &release.tag_name[1..];
+        // Gets the version from the release tag
+        let version = version::extract(&release.tag_name)?;
 
-        Ok(Version::parse(version)?)
+        Ok(Version::parse(&version)?)
     }
 
     fn assets(&self) -> Result<Vec<&dyn Asset>, Box<dyn Error>> {
