@@ -26,7 +26,7 @@ fn main() {
 
     let cfg = config::load().unwrap();
     cfg.verify().unwrap();
-    //println!("{:#?}", cfg);
+    println!("{:#?}", cfg);
 }
 
 fn self_rename() {

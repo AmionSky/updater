@@ -1,9 +1,11 @@
 use super::{Asset, Provider};
+use crate::config::Verifiable;
 use crate::version;
 use semver::Version;
 use serde::Deserialize;
 use std::error::Error;
 
+#[derive(Debug)]
 pub struct GitHubProvider {
     url: String,
     release: Option<GitHubRelease>,
@@ -26,6 +28,12 @@ impl GitHubProvider {
             Some(rel) => Ok(&rel),
             None => Err("No fetched content found!".into()),
         }
+    }
+}
+
+impl From<GitHubProviderSettings> for GitHubProvider {
+    fn from(settings: GitHubProviderSettings) -> Self {
+        Self::new(&settings.repository)
     }
 }
 
@@ -53,6 +61,22 @@ impl Provider for GitHubProvider {
         let release = self.release()?;
 
         Ok(release.assets.iter().map(|x| x as &dyn Asset).collect())
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GitHubProviderSettings {
+    /// The github repository (*user*/*repository*)
+    pub repository: String,
+}
+
+impl Verifiable for GitHubProviderSettings {
+    fn verify(&self) -> Result<(), Box<dyn Error>> {
+        if self.repository.is_empty() {
+            return Err("GitHub repository field is empty".into());
+        }
+
+        Ok(())
     }
 }
 
