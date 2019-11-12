@@ -1,32 +1,52 @@
 #![allow(dead_code)] // Cause its annoying
 
 mod config;
+mod launcher;
 mod locker;
 mod provider;
 mod update;
 mod version;
 
-use config::Verifiable;
+use config::{Config, Verifiable};
 use locker::Locker;
-use log::info;
+use log::{error, info};
 use std::error::Error;
 use std::path::PathBuf;
 
 fn main() {
-    simple_logger::init().unwrap();
-    let mut locker = Locker::default();
+    // Init base stuff
+    simple_logger::init().expect("logger failed to initialize");
+    let working_dir = working_dir().expect("failed to get the working directory");
+    info!("Working directory: {}", working_dir.display());
 
+    // Load config
+    let cfg = load_config();
+
+    // Launch the application specified in the config
+    launcher::launch(&working_dir, &cfg.application);
+
+    // Enable lockfile
+    let mut locker = Locker::default();
     if !locker.lock() {
         info!("Process already running!");
         std::process::exit(0);
     }
 
-    println!("{}", std::env::current_dir().unwrap().display());
-    println!("{}", working_dir().unwrap().display());
-
-    let cfg = config::load().unwrap();
-    cfg.verify().unwrap();
     println!("{:#?}", cfg);
+}
+
+/// Loads the configuration from file. Exits the program on error.
+fn load_config() -> Config {
+    let cfg = Config::load().unwrap_or_else(|e| {
+        error!("Failed to load config: {}", e);
+        std::process::exit(1);
+    });
+    info!("Configuration loaded");
+    cfg.verify().unwrap_or_else(|e| {
+        error!("Config verification failed: {}", e);
+        std::process::exit(2);
+    });
+    cfg
 }
 
 fn self_rename() {
