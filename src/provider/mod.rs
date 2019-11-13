@@ -18,10 +18,15 @@ pub trait Provider {
 
     /// Returns the downloadable assets of the latest release.
     fn assets(&self) -> Result<Vec<&dyn Asset>, Box<dyn Error>>;
+
+    /// Returns the downloadable assets of the latest release.
+    fn asset(&self, name: &str) -> Result<Box<dyn Asset>, Box<dyn Error>>;
 }
 
-pub trait Asset {
+pub trait Asset: Send {
     fn name(&self) -> &str;
     fn size(&self) -> u64;
     fn url(&self) -> &str;
+
+    fn box_clone(&self) -> Box<dyn Asset>;
 }

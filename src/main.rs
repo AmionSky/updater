@@ -3,6 +3,7 @@
 mod config;
 mod launcher;
 mod locker;
+mod platform;
 mod provider;
 mod update;
 mod version;

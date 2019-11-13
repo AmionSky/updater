@@ -62,6 +62,15 @@ impl Provider for GitHubProvider {
 
         Ok(release.assets.iter().map(|x| x as &dyn Asset).collect())
     }
+
+    fn asset(&self, name: &str) -> Result<Box<dyn Asset>, Box<dyn Error>> {
+        let release = self.release()?;
+
+        match release.assets.iter().find(|a| a.name() == name) {
+            Some(asset) => Ok(asset.box_clone()),
+            None => Err("Asset not found".into()),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -102,5 +111,9 @@ impl Asset for GitHubAsset {
     }
     fn url(&self) -> &str {
         &self.browser_download_url
+    }
+
+    fn box_clone(&self) -> Box<dyn Asset> {
+        Box::new(self.clone())
     }
 }

@@ -14,12 +14,20 @@ pub struct UpdateConfig {
     #[serde(rename = "should-install", default = "default_should_install")]
     pub should_install: bool,
 
+    /// The name of the asset to download
+    #[serde(rename = "asset-name")]
+    pub asset_name: String,
+
     /// Provicer configuration
     pub provider: ProviderConfig,
 }
 
 impl Verifiable for UpdateConfig {
     fn verify(&self) -> Result<(), Box<dyn Error>> {
+        if self.asset_name.is_empty() {
+            return Err("Asset name is empty".into());
+        }
+
         self.provider.verify()?;
 
         Ok(())
