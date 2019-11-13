@@ -31,14 +31,14 @@ impl GitHubProvider {
     }
 }
 
-impl From<GitHubProviderSettings> for GitHubProvider {
-    fn from(settings: GitHubProviderSettings) -> Self {
+impl From<&GitHubProviderSettings> for GitHubProvider {
+    fn from(settings: &GitHubProviderSettings) -> Self {
         Self::new(&settings.repository)
     }
 }
 
 impl Provider for GitHubProvider {
-    fn name() -> &'static str {
+    fn name(&self) -> &'static str {
         "GitHub"
     }
 

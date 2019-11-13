@@ -1,10 +1,42 @@
-use log::error;
+use crate::config::{Config, ProviderConfig};
+use crate::provider::{GitHubProvider, Provider};
+use log::{error, info};
+use semver::Version;
 use std::error::Error;
 use std::fs;
 use std::path::Path;
 
 pub fn self_exe() -> Result<(), Box<dyn Error>> {
     unimplemented!();
+}
+
+pub fn application<P: AsRef<Path>>(
+    wd: P,
+    cfg: &Config,
+    version: Version,
+) -> Result<Version, Box<dyn Error>> {
+    info!("Checking for latest version");
+
+    // Setup provider
+    let mut provider = get_provider(&cfg.update.provider)?;
+    provider.fetch()?;
+
+    // Check version difference
+    let latest = provider.version()?;
+    if latest <= version {
+        info!("{} is up-to-date", &cfg.application.name);
+        return Ok(version);
+    }
+
+    // TODO Download Install
+    unimplemented!();
+}
+
+fn get_provider(p_cfg: &ProviderConfig) -> Result<Box<dyn Provider>, Box<dyn Error>> {
+    if let Some(gh_cfg) = p_cfg.github.as_ref() {
+        return Ok(Box::new(GitHubProvider::from(gh_cfg)));
+    }
+    Err("No provider was specified!".into())
 }
 
 /// Replace file by renaming it to a temp name

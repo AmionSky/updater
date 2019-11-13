@@ -10,6 +10,10 @@ pub struct UpdateConfig {
     /// Should the updater update itself.
     #[serde(rename = "update-self", default = "default_update_self")]
     pub update_self: bool,
+    /// Should the updater install the application if not found.
+    #[serde(rename = "should-install", default = "default_should_install")]
+    pub should_install: bool,
+
     /// Provicer configuration
     pub provider: ProviderConfig,
 }
@@ -27,5 +31,9 @@ fn default_before_launch() -> bool {
 }
 
 fn default_update_self() -> bool {
+    true
+}
+
+fn default_should_install() -> bool {
     true
 }

@@ -7,7 +7,7 @@ use std::error::Error;
 
 pub trait Provider {
     /// Gets the name of the provider.
-    fn name() -> &'static str;
+    fn name(&self) -> &'static str;
 
     /// Fetches all necessary data for the provider.
     /// Will probably require blocking network operations.
