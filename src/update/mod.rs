@@ -1,10 +1,11 @@
 mod download;
 mod progress;
 
+pub use progress::Progress;
+
 use crate::config::{Config, ProviderConfig};
 use crate::provider::{Asset, GitHubProvider, Provider};
 use log::{error, info};
-use progress::Progress;
 use semver::Version;
 use std::error::Error;
 use std::path::Path;
@@ -37,15 +38,7 @@ pub fn application<P: AsRef<Path>>(
         let asset = provider.asset(&convert_asset_name(&cfg.update.asset_name))?;
         download::asset(asset, progress.clone())
     };
-
-    let sleeptime = std::time::Duration::from_millis(100);
-    loop {
-        print!("Progress: {}", progress.percent());
-        std::thread::sleep(sleeptime);
-        if progress.complete() {
-            break;
-        }
-    }
+    crate::platform::progress_window(progress);
 
     let file = if let Ok(Some(file)) = dl_thread.join() {
         file
