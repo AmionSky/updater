@@ -20,13 +20,6 @@ regex = "1"
 lazy_static = "1"
 tempfile = "3"
 
-[target.'cfg(target_os="windows")'.dependencies]
-nwg = { package = "native-windows-gui", version = "0.2.1" }
-
-[target.'cfg(target_os="linux")'.dependencies]
-gtk = "0.8.0"
-gio = "0.8.0"
-
 [profile.release]
 opt-level = 3
 debug = false

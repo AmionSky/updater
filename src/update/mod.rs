@@ -38,7 +38,6 @@ pub fn application<P: AsRef<Path>>(
         let asset = provider.asset(&convert_asset_name(&cfg.update.asset_name))?;
         download::asset(asset, progress.clone())
     };
-    crate::platform::progress_window(progress);
 
     let file = if let Ok(Some(file)) = dl_thread.join() {
         file
