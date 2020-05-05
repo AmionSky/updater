@@ -14,15 +14,17 @@ use std::error::Error;
 use std::path::PathBuf;
 
 fn main() {
-    // Init base stuff
     setup_logger();
+    let cfg = load_config();
+    start(&cfg);
+}
+
+fn start(cfg: &Config) {
     let working_dir = get_working_dir().expect("failed to get the working directory");
     info!("Working directory: {}", working_dir.display());
-
-    // Load configs
-    let cfg = load_config();
-    let mut should_launch = true;
     let mut version = version::read_file(version::app_file(&working_dir));
+    info!("Current version: {:?}", version);
+    let mut should_launch = true;
 
     // Launch application if needed
     if !cfg.update.before_launch && version.is_some() {
@@ -39,25 +41,10 @@ fn main() {
         std::process::exit(0);
     }
 
-    if version.is_some() || cfg.update.should_install {
-        // Update/Install application
-        let ver = version.unwrap_or_else(|| Version::new(0, 0, 0));
-        version = match update::application(&working_dir, &cfg, ver) {
-            Ok(v) => {
-                if version::write_file(version::app_file(&working_dir), &v).is_err() {
-                    error!("Failed to update version file");
-                };
-                Some(v)
-            }
-            Err(e) => {
-                error!("Application update failed with error: {}", e);
-                should_launch = false;
-                None
-            }
-        }
-    } else {
-        should_launch = false;
-    }
+    // TODO try delete older versions
+
+    // Update/Install application
+    upd_app(&working_dir, &cfg, &mut should_launch, &mut version);
 
     // Launch application if needed
     if should_launch {
@@ -69,6 +56,27 @@ fn main() {
         if let Err(err) = update::self_exe(&working_dir) {
             error!("Failed to update self: {}", err);
         }
+    }
+}
+
+fn upd_app(wd: &PathBuf, cfg: &Config, should_launch: &mut bool, version: &mut Option<Version>) {
+    if version.is_some() || cfg.update.should_install {
+        let ver = version.clone().unwrap_or_else(|| Version::new(0, 0, 0));
+        *version = match update::application(&wd, &cfg, ver) {
+            Ok(v) => {
+                if version::write_file(version::app_file(&wd), &v).is_err() {
+                    error!("Failed to update version file");
+                };
+                Some(v)
+            }
+            Err(e) => {
+                error!("Application update failed with error: {}", e);
+                *should_launch = false;
+                None
+            }
+        }
+    } else {
+        *should_launch = false;
     }
 }
 
