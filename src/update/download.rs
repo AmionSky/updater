@@ -3,7 +3,7 @@ use crate::provider::{Asset, Provider};
 use log::{error, info};
 use std::error::Error;
 use std::fs::File;
-use std::io::{ErrorKind, Read, Write};
+use std::io::{ErrorKind, Read, Seek, SeekFrom, Write};
 use std::sync::Arc;
 use std::thread::JoinHandle;
 
@@ -73,5 +73,7 @@ fn download_inner(asset: Box<dyn Asset>, progress: &Arc<Progress>) -> Result<Fil
         progress.add_current(len as u64);
     }
 
+    out.flush()?;
+    out.seek(SeekFrom::Start(0))?;
     Ok(out)
 }
