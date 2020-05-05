@@ -22,7 +22,7 @@ pub fn self_exe<P: AsRef<Path>>(wd: P) -> Result<(), Box<dyn Error>> {
     info!("Downloading updater v{}", &latest);
 
     // Start download
-    let (_p, dl) = download::easy(&provider, "updater-<os>-<arch>")?;
+    let (_p, dl) = download::easy(&provider, "updater-<os>-<arch>.exe")?;
     // Wait for the download to finish
     let mut file = if let Ok(Some(file)) = dl.join() {
         file
