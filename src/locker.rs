@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use fs2::FileExt;
 use std::fs::File;
 use std::path::PathBuf;

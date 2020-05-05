@@ -1,23 +1,10 @@
 use lazy_static::lazy_static;
-use log::error;
 use regex::Regex;
 use semver::Version;
 use std::error::Error;
 use std::path::{Path, PathBuf};
 
 pub const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
-
-macro_rules! parse_or_return {
-    ($var:expr) => {
-        match Version::parse($var) {
-            Ok(v) => v,
-            Err(_) => {
-                error!("Failed to parse {} version: {}", stringify!($var), $var);
-                return false;
-            }
-        }
-    };
-}
 
 /// Extracts only the semver from a string
 pub fn extract(version: &str) -> Result<String, Box<dyn Error>> {
@@ -26,14 +13,6 @@ pub fn extract(version: &str) -> Result<String, Box<dyn Error>> {
     }
     let mat = RE.find(version).ok_or("Version regex match failed")?;
     Ok(version[mat.start()..mat.end()].into())
-}
-
-/// Checks if the latest version is newer
-pub fn check(current: &str, latest: &str) -> bool {
-    let c = parse_or_return!(current);
-    let l = parse_or_return!(latest);
-
-    c < l
 }
 
 pub fn app_file<P: AsRef<Path>>(wd: P) -> PathBuf {
@@ -59,6 +38,27 @@ pub fn write_file<P: AsRef<Path>>(file: P, version: &Version) -> Result<(), Box<
 #[cfg(test)]
 mod tests {
     use super::*;
+    use log::error;
+
+    macro_rules! parse_or_return {
+        ($var:expr) => {
+            match Version::parse($var) {
+                Ok(v) => v,
+                Err(_) => {
+                    error!("Failed to parse {} version: {}", stringify!($var), $var);
+                    return false;
+                }
+            }
+        };
+    }
+
+    /// Checks if the latest version is newer
+    fn check(current: &str, latest: &str) -> bool {
+        let c = parse_or_return!(current);
+        let l = parse_or_return!(latest);
+
+        c < l
+    }
 
     #[test]
     fn check_latest_newer() {
