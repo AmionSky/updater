@@ -1,5 +1,3 @@
-#![allow(dead_code)] // Cause its annoying
-
 mod config;
 mod launcher;
 mod locker;
@@ -26,22 +24,23 @@ fn main() {
     let mut should_launch = true;
     let mut version = version::read_file(version::app_file(&working_dir));
 
-    // Launch if needed
+    // Launch application if needed
     if !cfg.update.before_launch && version.is_some() {
         // Launch the application specified in the config
         launcher::launch(&working_dir, version.as_ref().unwrap(), &cfg.application);
         should_launch = false;
     }
 
-    // Enable lockfile
+    // Create lockfile
     let mut locker = Locker::default();
+    // Exit if the updater is already running
     if !locker.lock() {
         info!("Process already running!");
         std::process::exit(0);
     }
 
     if version.is_some() || cfg.update.should_install {
-        // Update
+        // Update/Install application
         let ver = version.unwrap_or_else(|| Version::new(0, 0, 0));
         version = match update::application(&working_dir, &cfg, ver) {
             Ok(v) => {
@@ -60,13 +59,17 @@ fn main() {
         should_launch = false;
     }
 
-    // Launch if needed
+    // Launch application if needed
     if should_launch {
         launcher::launch(&working_dir, version.as_ref().unwrap(), &cfg.application);
     }
 
     // Update self
-    // TODO
+    if cfg.update.update_self {
+        if let Err(err) = update::self_exe(&working_dir) {
+            error!("Failed to update self: {}", err);
+        }
+    }
 }
 
 /// Loads the configuration from file. Exits the program on error.
@@ -75,11 +78,11 @@ fn load_config() -> Config {
         error!("Failed to load config: {}", e);
         std::process::exit(1);
     });
-    info!("Configuration loaded");
     cfg.verify().unwrap_or_else(|e| {
         error!("Config verification failed: {}", e);
         std::process::exit(2);
     });
+    info!("Configuration loaded and verified");
     cfg
 }
 

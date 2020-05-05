@@ -1,11 +1,24 @@
 use super::progress::Progress;
-use crate::provider::Asset;
+use crate::provider::{Asset, Provider};
 use log::{error, info};
 use std::error::Error;
 use std::fs::File;
 use std::io::{ErrorKind, Read, Write};
 use std::sync::Arc;
 use std::thread::JoinHandle;
+
+pub fn easy(
+    provider: &dyn Provider,
+    asset_name: &str,
+) -> Result<(Arc<Progress>, JoinHandle<Option<File>>), Box<dyn Error>> {
+    let progress = Arc::new(Progress::default());
+    let dl_thread = {
+        let asset_obj = provider.asset(&convert_asset_name(asset_name))?;
+        asset(asset_obj, progress.clone())
+    };
+
+    Ok((progress, dl_thread))
+}
 
 pub fn asset(asset: Box<dyn Asset>, progress: Arc<Progress>) -> JoinHandle<Option<File>> {
     std::thread::spawn(move || {
@@ -29,6 +42,12 @@ pub fn asset(asset: Box<dyn Asset>, progress: Arc<Progress>) -> JoinHandle<Optio
         progress.set_complete(true);
         res
     })
+}
+
+pub fn convert_asset_name(name: &str) -> String {
+    use crate::platform::{ARCH, OS};
+    let new_name = name.replace("<os>", OS);
+    new_name.replace("<arch>", ARCH)
 }
 
 fn download_inner(asset: Box<dyn Asset>, progress: &Arc<Progress>) -> Result<File, Box<dyn Error>> {
