@@ -1,5 +1,4 @@
 use super::download;
-use crate::platform::EXE;
 use crate::provider::{GitHubProvider, Provider};
 use crate::version::PKG_VERSION;
 use log::{error, info};
@@ -35,7 +34,7 @@ pub fn self_exe<P: AsRef<Path>>(wd: P) -> Result<(), Box<dyn Error>> {
 
     // Define paths
     let replacement_path = wd.as_ref().join("updater.new");
-    let target_path = wd.as_ref().join(EXE);
+    let target_path = std::env::current_exe()?;
     let temp_path = wd.as_ref().join("updater.old");
 
     // Copy new updater exe

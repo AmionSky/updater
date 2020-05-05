@@ -29,9 +29,7 @@ pub fn read_file<P: AsRef<Path>>(version_file: P) -> Option<Version> {
 }
 
 pub fn write_file<P: AsRef<Path>>(file: P, version: &Version) -> Result<(), Box<dyn Error>> {
-    if file.as_ref().exists() {
-        std::fs::write(file, version.to_string())?;
-    }
+    std::fs::write(file, version.to_string())?;
     Ok(())
 }
 

@@ -23,7 +23,9 @@ fn start(cfg: &Config) {
     let working_dir = get_working_dir().expect("failed to get the working directory");
     info!("Working directory: {}", working_dir.display());
     let mut version = version::read_file(version::app_file(&working_dir));
-    info!("Current version: {:?}", version);
+    if version.is_some() {
+        info!("Current version: {}", version.as_ref().unwrap());
+    }
     let mut should_launch = true;
 
     // Launch application if needed
