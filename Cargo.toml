@@ -21,6 +21,9 @@ lazy_static = "1"
 tempfile = "3"
 zip = "0.5"
 
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["wincon"] }
+
 [profile.dev.package."*"]
 opt-level = 2
 
