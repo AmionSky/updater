@@ -27,10 +27,12 @@ fn main() {
 fn start(cfg: &Config) {
     let working_dir = get_working_dir().expect("failed to get the working directory");
     info!("Working directory: {}", working_dir.display());
+
     let mut version = version::read_file(version::app_file(&working_dir));
     if version.is_some() {
         info!("Current version: {}", version.as_ref().unwrap());
     }
+
     let mut should_launch = true;
 
     // Launch application if needed
@@ -125,4 +127,15 @@ fn logger_config() -> simplelog::Config {
 fn attach_console() {
     use winapi::um::wincon::{AttachConsole, ATTACH_PARENT_PROCESS};
     let _ = unsafe { AttachConsole(ATTACH_PARENT_PROCESS) };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn check_get_working_dir() {
+        let dir = get_working_dir().expect("get_working_dir() failed!");
+        assert!(dir.is_dir());
+    }
 }

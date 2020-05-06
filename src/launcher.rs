@@ -15,3 +15,15 @@ pub fn launch<P: AsRef<Path>>(wd: P, version: &Version, app_cfg: &ApplicationCon
 fn resolve_path<P: AsRef<Path>, Q: AsRef<Path>, R: AsRef<Path>>(wd: P, ver: Q, rel: R) -> PathBuf {
     [wd.as_ref(), ver.as_ref(), rel.as_ref()].iter().collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn check_resolve_path() {
+        let correct = PathBuf::from("/check/this/fn");
+        let path = resolve_path("/check", "this/", "fn");
+        assert_eq!(correct, path);
+    }
+}
