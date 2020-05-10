@@ -2,12 +2,21 @@ use crate::config::ApplicationConfig;
 use log::{error, info};
 use semver::Version;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 pub fn launch<P: AsRef<Path>>(wd: P, version: &Version, app_cfg: &ApplicationConfig) {
     info!("Launching {}", &app_cfg.name);
     let path = resolve_path(wd, version.to_string(), &app_cfg.executable);
-    if Command::new(path).spawn().is_err() {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+
+    let mut command = Command::new(path);
+    command
+        .args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+
+    if command.spawn().is_err() {
         error!("Failed to launch application")
     }
 }
