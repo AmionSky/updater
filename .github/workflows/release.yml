@@ -1,0 +1,83 @@
+name: Build and upload release executable
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+        - os: ubuntu-latest
+          target: x86_64-unknown-linux-gnu
+          exename: updater-linux-x64
+          rename: mv updater
+          asset: l64
+        - os: ubuntu-latest
+          target: i686-unknown-linux-gnu
+          exename: updater-linux-x86
+          rename: mv updater
+          asset: l32
+        - os: windows-latest
+          target: x86_64-pc-windows-msvc
+          exename: updater-win-x64.exe
+          rename: ren updater.exe
+          asset: w64
+        - os: windows-latest
+          target: i686-pc-windows-msvc
+          exename: updater-win-x86.exe
+          rename: ren updater.exe
+          asset: w32
+  
+    name: Build ${{ matrix.exename }}
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install targets
+      run: rustup target install ${{ matrix.target }}
+    - name: Build
+      run: cargo build --target ${{ matrix.target }} --release --verbose
+    - name: Run tests
+      run: cargo test --target ${{ matrix.target }} --release --verbose
+    - name: Rename executable
+      run: |
+        cd target/${{ matrix.target }}/release
+        ${{ matrix.rename }} ${{ matrix.exename }}
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.asset }}
+        path: target/${{ matrix.target }}/release/${{ matrix.exename }}
+
+  upload:
+    strategy:
+      matrix:
+        include:
+        - asset: l64
+          target: updater-linux-x64
+          mime: application/octet-stream
+        - asset: l32
+          target: updater-linux-x86
+          mime: application/octet-stream
+        - asset: w64
+          target: updater-win-x64.exe
+          mime: application/vnd.microsoft.portable-executable
+        - asset: w32
+          target: updater-win-x86.exe
+          mime: application/vnd.microsoft.portable-executable
+
+    name: Upload ${{ matrix.target }} to Release
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+    - name: Download ${{ matrix.asset }}
+      uses: actions/download-artifact@v2
+      with:
+        name: ${{ matrix.asset }}
+    - name: Upload ${{ matrix.target }}
+      uses: JasonEtco/upload-to-release@v0.1.1
+      with:
+        args: ${{ matrix.target }} ${{ matrix.mime }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
