@@ -28,9 +28,9 @@ pub fn self_exe<P: AsRef<Path>>(wd: P) -> Result<(), Box<dyn Error>> {
     info!("Downloading updater v{}", &latest);
 
     // Start download
-    let (_p, dl) = download::easy(&provider, "updater-<os>-<arch>.exe")?;
+    let dl = download::easy(&provider, "updater-<os>-<arch>.exe")?;
     // Wait for the download to finish
-    let file = if let Ok(Some(file)) = dl.join() {
+    let file = if let Ok(Some(file)) = dl.thread.join() {
         file
     } else {
         return Err("Asset download failed!".into());

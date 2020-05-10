@@ -27,10 +27,10 @@ pub fn application<P: AsRef<Path>>(
     info!("Downloading {} v{}", &cfg.application.name, &latest);
 
     // Start download
-    let (_p, dl) = download::easy(&*provider, &cfg.update.asset_name)?;
+    let dl = download::easy(&*provider, &cfg.update.asset_name)?;
 
     // Wait for the download to finish
-    let file = if let Ok(Some(file)) = dl.join() {
+    let file = if let Ok(Some(file)) = dl.thread.join() {
         file
     } else {
         return Err("Asset download failed!".into());

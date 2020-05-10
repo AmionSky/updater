@@ -33,14 +33,14 @@ fn start(cfg: &Config) {
         info!("Current version: {}", version.as_ref().unwrap());
     }
 
-    let mut should_launch = true;
-
     // Launch application if needed
-    if !cfg.update.before_launch && version.is_some() {
+    let mut should_launch = if !cfg.update.before_launch && version.is_some() {
         // Launch the application specified in the config
         launcher::launch(&working_dir, version.as_ref().unwrap(), &cfg.application);
-        should_launch = false;
-    }
+        false
+    } else {
+        true
+    };
 
     // Create lockfile
     let mut locker = Locker::default();
@@ -50,7 +50,11 @@ fn start(cfg: &Config) {
         std::process::exit(0);
     }
 
-    // TODO try delete older versions
+    // try delete older versions
+    info!("Cleaning-up older versions");
+    if version.is_some() && clean_old_versions(&working_dir, version.as_ref().unwrap()).is_err() {
+        error!("Failed to clean old version!");
+    }
 
     // Update/Install application
     upd_app(&working_dir, &cfg, &mut should_launch, &mut version);
@@ -107,6 +111,33 @@ fn get_working_dir() -> Result<PathBuf, Box<dyn Error>> {
     let mut dir = std::env::current_exe()?;
     dir.pop();
     Ok(dir)
+}
+
+fn clean_old_versions(wd: &PathBuf, version: &Version) -> Result<(), Box<dyn Error>> {
+    //let version_name = std::ffi::OsString::from(version.to_string());
+    let dirs = std::fs::read_dir(wd)?;
+
+    // Iterate over directories
+    for dir in dirs {
+        if let Ok(dir) = dir {
+            // Get the directory name
+            if let Some(dir_name) = dir.file_name().to_str() {
+                // Try to convert the name to semver
+                if let Ok(dir_version) = Version::parse(dir_name) {
+                    // Compare the dir_version to the current version
+                    if dir_version < *version {
+                        // If its older, delete the directory
+                        let dir_path = dir.path();
+                        if std::fs::remove_dir_all(dir_path).is_err() {
+                            error!("Failed to delete old version () directory!");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(())
 }
 
 fn setup_logger() {

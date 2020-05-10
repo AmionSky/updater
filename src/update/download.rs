@@ -7,17 +7,19 @@ use std::io::{ErrorKind, Read, Seek, SeekFrom, Write};
 use std::sync::Arc;
 use std::thread::JoinHandle;
 
-pub fn easy(
-    provider: &dyn Provider,
-    asset_name: &str,
-) -> Result<(Arc<Progress>, JoinHandle<Option<File>>), Box<dyn Error>> {
+pub struct Download {
+    pub progress: Arc<Progress>,
+    pub thread: JoinHandle<Option<File>>,
+}
+
+pub fn easy(provider: &dyn Provider, asset_name: &str) -> Result<Download, Box<dyn Error>> {
     let progress = Arc::new(Progress::default());
-    let dl_thread = {
+    let thread = {
         let asset_obj = provider.asset(&convert_asset_name(asset_name))?;
         asset(asset_obj, progress.clone())
     };
 
-    Ok((progress, dl_thread))
+    Ok(Download { progress, thread })
 }
 
 pub fn asset(asset: Box<dyn Asset>, progress: Arc<Progress>) -> JoinHandle<Option<File>> {
