@@ -10,21 +10,25 @@ jobs:
       matrix:
         include:
         - os: ubuntu-latest
+          extra: echo OK
           target: x86_64-unknown-linux-gnu
           exename: updater-linux-x64
           rename: mv updater
           asset: l64
-        #- os: ubuntu-latest
-        #  target: i686-unknown-linux-gnu
-        #  exename: updater-linux-x86
-        #  rename: mv updater
-        #  asset: l32
+        - os: ubuntu-latest
+          extra: sudo apt-get install gcc-multilib
+          target: i686-unknown-linux-gnu
+          exename: updater-linux-x86
+          rename: mv updater
+          asset: l32
         - os: windows-latest
+          extra: echo OK
           target: x86_64-pc-windows-msvc
           exename: updater-win-x64.exe
           rename: ren updater.exe
           asset: w64
         - os: windows-latest
+          extra: echo OK
           target: i686-pc-windows-msvc
           exename: updater-win-x86.exe
           rename: ren updater.exe
@@ -34,6 +38,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
+    - name: Run Extra
+      run: ${{ matrix.extra }}
     - name: Install targets
       run: rustup target install ${{ matrix.target }}
     - name: Build
@@ -57,9 +63,9 @@ jobs:
         - asset: l64
           target: updater-linux-x64
           mime: application/octet-stream
-        #- asset: l32
-        #  target: updater-linux-x86
-        #  mime: application/octet-stream
+        - asset: l32
+          target: updater-linux-x86
+          mime: application/octet-stream
         - asset: w64
           target: updater-win-x64.exe
           mime: application/vnd.microsoft.portable-executable
