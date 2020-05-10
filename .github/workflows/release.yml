@@ -14,11 +14,11 @@ jobs:
           exename: updater-linux-x64
           rename: mv updater
           asset: l64
-        - os: ubuntu-latest
-          target: i686-unknown-linux-gnu
-          exename: updater-linux-x86
-          rename: mv updater
-          asset: l32
+        #- os: ubuntu-latest
+        #  target: i686-unknown-linux-gnu
+        #  exename: updater-linux-x86
+        #  rename: mv updater
+        #  asset: l32
         - os: windows-latest
           target: x86_64-pc-windows-msvc
           exename: updater-win-x64.exe
@@ -57,9 +57,9 @@ jobs:
         - asset: l64
           target: updater-linux-x64
           mime: application/octet-stream
-        - asset: l32
-          target: updater-linux-x86
-          mime: application/octet-stream
+        #- asset: l32
+        #  target: updater-linux-x86
+        #  mime: application/octet-stream
         - asset: w64
           target: updater-win-x64.exe
           mime: application/vnd.microsoft.portable-executable
