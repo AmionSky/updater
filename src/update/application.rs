@@ -30,13 +30,11 @@ pub fn application<P: AsRef<Path>>(
     let dl = download::asset(&*provider, &cfg.update.asset_name)?;
 
     #[cfg(feature = "progress-window")]
-    crate::window::show(
-        format!(
-            "Downloading update: {:.2} MB",
-            dl.asset.size() as f64 / 1_000_000.0
-        ),
+    crate::window::show(crate::window::WindowConfig::new(
+        format!("{} Updater", &cfg.application.name),
+        format!("Downloading {:.2} MB", dl.asset.size() as f64 / 1_000_000.0),
         dl.progress,
-    )?;
+    ))?;
 
     // Wait for the download to finish
     let file = if let Ok(Some(file)) = dl.thread.join() {

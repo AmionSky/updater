@@ -2,6 +2,7 @@
 
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
+#[derive(Debug)]
 pub struct Progress {
     indeterminate: AtomicBool,
     complete: AtomicBool,

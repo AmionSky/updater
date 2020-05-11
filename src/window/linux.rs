@@ -1,6 +1,7 @@
 use gio::prelude::*;
 use gtk::prelude::*;
 
+use super::percent_text;
 use crate::update::Progress;
 use gtk::{Application, ApplicationWindow, Label, ProgressBar};
 use std::error::Error;
@@ -72,8 +73,4 @@ fn activate(app: &Application, progress: Arc<Progress>, label: String) {
     });
 
     window.show_all();
-}
-
-fn percent_text(percent: f64) -> String {
-    format!("{:.1}%", percent * 100.0)
 }
