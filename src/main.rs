@@ -8,6 +8,9 @@ mod provider;
 mod update;
 mod version;
 
+#[cfg(feature = "progress-window")]
+mod window;
+
 use config::{Config, Verifiable};
 use locker::Locker;
 use log::{error, info};
@@ -18,6 +21,9 @@ use std::path::PathBuf;
 fn main() {
     #[cfg(target_os = "windows")]
     attach_console();
+
+    #[cfg(feature = "progress-window")]
+    window::showdbg();
 
     setup_logger();
     let cfg = load_config();

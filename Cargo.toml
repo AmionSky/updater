@@ -24,6 +24,14 @@ zip = "0.5"
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["wincon"] }
 
+[target.'cfg(target_os="linux")'.dependencies]
+gtk = { version = "0.8.1", features = ["v3_24_8"], optional = true }
+gio = { version = "0.8.1", features = ["v2_60"], optional = true }
+
+[features]
+default = []
+progress-window = ["gtk", "gio"]
+
 [profile.dev.package."*"]
 opt-level = 2
 
