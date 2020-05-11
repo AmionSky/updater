@@ -55,9 +55,7 @@ fn activate(app: &Application, wc: WindowConfig) {
     basebox.add(&progress_bar);
 
     // Tick
-    let lbp_clone = label_percent.clone();
     let wnd_clone = window.clone();
-    let pb_clone = progress_bar.clone();
     gtk::timeout_add(UPDATE_INTERVAL, move || {
         if wc.progress().complete() {
             wnd_clone.close();
@@ -65,8 +63,8 @@ fn activate(app: &Application, wc: WindowConfig) {
         }
 
         let percent = wc.progress().percent();
-        pb_clone.set_fraction(percent);
-        lbp_clone.set_text(&percent_text(percent));
+        progress_bar.set_fraction(percent);
+        label_percent.set_text(&percent_text(percent));
 
         Continue(true)
     });
