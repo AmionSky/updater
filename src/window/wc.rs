@@ -1,7 +1,7 @@
 use crate::update::Progress;
 use std::sync::Arc;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 pub struct WindowConfig {
     title: String,
     label: String,
