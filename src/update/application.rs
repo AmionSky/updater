@@ -27,7 +27,7 @@ pub fn application<P: AsRef<Path>>(
     info!("Downloading {} v{}", &cfg.application.name, &latest);
 
     // Start download
-    let dl = download::easy(&*provider, &cfg.update.asset_name)?;
+    let dl = download::asset(&*provider, &cfg.update.asset_name)?;
 
     // Wait for the download to finish
     let file = if let Ok(Some(file)) = dl.thread.join() {

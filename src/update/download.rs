@@ -12,17 +12,17 @@ pub struct Download {
     pub thread: JoinHandle<Option<File>>,
 }
 
-pub fn easy(provider: &dyn Provider, asset_name: &str) -> Result<Download, Box<dyn Error>> {
+pub fn asset(provider: &dyn Provider, asset_name: &str) -> Result<Download, Box<dyn Error>> {
     let progress = Arc::new(Progress::default());
     let thread = {
         let asset_obj = provider.asset(&convert_asset_name(asset_name))?;
-        asset(asset_obj, progress.clone())
+        asset_manual(asset_obj, progress.clone())
     };
 
     Ok(Download { progress, thread })
 }
 
-pub fn asset(asset: Box<dyn Asset>, progress: Arc<Progress>) -> JoinHandle<Option<File>> {
+pub fn asset_manual(asset: Box<dyn Asset>, progress: Arc<Progress>) -> JoinHandle<Option<File>> {
     std::thread::spawn(move || {
         info!(
             "Downloading {} - {:.2}MB",

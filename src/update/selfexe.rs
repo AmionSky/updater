@@ -4,6 +4,7 @@ use crate::version::PKG_VERSION;
 use log::{error, info};
 use semver::Version;
 use std::error::Error;
+use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 
@@ -28,7 +29,7 @@ pub fn self_exe<P: AsRef<Path>>(wd: P) -> Result<(), Box<dyn Error>> {
     info!("Downloading updater v{}", &latest);
 
     // Start download
-    let dl = download::easy(&provider, "updater-<os>-<arch>.exe")?;
+    let dl = download::asset(&provider, "updater-<os>-<arch>.exe")?;
     // Wait for the download to finish
     let file = if let Ok(Some(file)) = dl.thread.join() {
         file
@@ -43,21 +44,28 @@ pub fn self_exe<P: AsRef<Path>>(wd: P) -> Result<(), Box<dyn Error>> {
     let target_path = std::env::current_exe()?;
 
     // Copy new updater exe
-    {
-        let mut repfile = std::fs::File::create(&replacement_path)?;
-        {
-            let mut reader = BufReader::new(&file);
-            let mut writer = BufWriter::new(&repfile);
-            std::io::copy(&mut reader, &mut writer)?;
-        }
-        repfile.flush()?;
-    }
+    copy_file(&file, &replacement_path)?;
 
     // Swap updater exe
     replace_temp(&replacement_path, &target_path, &temp_path)?;
 
     // Done
     info!("Update successful!");
+    Ok(())
+}
+
+fn copy_file<P: AsRef<Path>>(file: &File, target_path: P) -> Result<(), Box<dyn Error>> {
+    let mut target_file = File::create(target_path)?;
+
+    // Copy
+    {
+        let mut reader = BufReader::new(file);
+        let mut writer = BufWriter::new(&target_file);
+        std::io::copy(&mut reader, &mut writer)?;
+    }
+
+    target_file.flush()?;
+
     Ok(())
 }
 
