@@ -22,9 +22,6 @@ fn main() {
     #[cfg(target_os = "windows")]
     attach_console();
 
-    #[cfg(feature = "progress-window")]
-    window::showdbg();
-
     setup_logger();
     let cfg = load_config();
     start(&cfg);
