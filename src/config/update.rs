@@ -13,6 +13,9 @@ pub struct UpdateConfig {
     /// Should the updater install the application if not found.
     #[serde(rename = "should-install", default = "default_should_install")]
     pub should_install: bool,
+    /// Show the download progress on a window.
+    #[serde(rename = "show-progress", default = "default_show_progress")]
+    pub show_progress: bool,
 
     /// The name of the asset to download
     #[serde(rename = "asset-name")]
@@ -44,4 +47,8 @@ fn default_update_self() -> bool {
 
 fn default_should_install() -> bool {
     true
+}
+
+fn default_show_progress() -> bool {
+    false
 }
