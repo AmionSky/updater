@@ -1,6 +1,6 @@
 [package]
 name = "updater"
-version = "0.1.2"
+version = "0.2.0"
 authors = ["Csányi István <icsanyi96@gmail.com>"]
 edition = "2018"
 publish = false
@@ -21,8 +21,17 @@ lazy_static = "1"
 tempfile = "3"
 zip = "0.5"
 
-[target.'cfg(windows)'.dependencies]
+[target.'cfg(target_os="windows")'.dependencies]
 winapi = { version = "0.3", features = ["wincon"] }
+nwg = { package = "native-windows-gui", git = "https://github.com/AmionSky/native-windows-gui", branch = "1.0-prerelease", features = ["progress-bar","timer"], optional = true }
+
+[target.'cfg(target_os="linux")'.dependencies]
+gtk = { version = "0.8", features = ["v3_16"], optional = true }
+gio = { version = "0.8", features = ["v2_44"], optional = true }
+
+[features]
+default = ["window"]
+window = ["gtk", "gio", "nwg"]
 
 [profile.dev.package."*"]
 opt-level = 2

@@ -2,6 +2,7 @@ use super::download;
 use super::zip;
 use crate::config::{Config, ProviderConfig};
 use crate::provider::{GitHubProvider, Provider};
+use download::Download;
 use log::info;
 use semver::Version;
 use std::error::Error;
@@ -28,6 +29,9 @@ pub fn application<P: AsRef<Path>>(
 
     // Start download
     let dl = download::asset(&*provider, &cfg.update.asset_name)?;
+
+    #[cfg(feature = "window")]
+    show_window(&cfg, &dl)?;
 
     // Wait for the download to finish
     let file = if let Ok(Some(file)) = dl.thread.join() {
@@ -58,4 +62,24 @@ fn get_provider(p_cfg: &ProviderConfig) -> Result<Box<dyn Provider>, Box<dyn Err
         return Ok(Box::new(GitHubProvider::from(gh_cfg)));
     }
     Err("No provider was specified!".into())
+}
+
+#[cfg(feature = "window")]
+fn show_window(cfg: &Config, dl: &Download) -> Result<(), Box<dyn Error>> {
+    use crate::window::{self, WindowConfig};
+
+    if cfg.update.show_progress {
+        let cancelled = window::show(WindowConfig::new(
+            format!("{} Updater", &cfg.application.name),
+            format!("Downloading {:.2} MB", dl.asset.size() as f64 / 1_000_000.0),
+            dl.progress.clone(),
+        ))?;
+
+        if cancelled {
+            info!("User cancelled the update! Exiting...");
+            std::process::exit(0);
+        }
+    }
+
+    Ok(())
 }

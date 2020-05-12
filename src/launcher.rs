@@ -16,9 +16,14 @@ pub fn launch<P: AsRef<Path>>(wd: P, version: &Version, app_cfg: &ApplicationCon
         .stdout(Stdio::null())
         .stderr(Stdio::null());
 
-    if command.spawn().is_err() {
-        error!("Failed to launch application")
+    if let Err(e) = command.spawn() {
+        error!("Failed to launch application: {}", e);
     }
+}
+
+pub fn check<P: AsRef<Path>>(wd: P, version: &Version, app_cfg: &ApplicationConfig) -> bool {
+    let path = resolve_path(wd, version.to_string(), &app_cfg.executable);
+    path.exists()
 }
 
 fn resolve_path<P: AsRef<Path>, Q: AsRef<Path>, R: AsRef<Path>>(wd: P, ver: Q, rel: R) -> PathBuf {

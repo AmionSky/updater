@@ -10,16 +10,19 @@ use std::thread::JoinHandle;
 pub struct Download {
     pub progress: Arc<Progress>,
     pub thread: JoinHandle<Option<File>>,
+    pub asset: Box<dyn Asset>,
 }
 
 pub fn asset(provider: &dyn Provider, asset_name: &str) -> Result<Download, Box<dyn Error>> {
     let progress = Arc::new(Progress::default());
-    let thread = {
-        let asset_obj = provider.asset(&convert_asset_name(asset_name))?;
-        asset_manual(asset_obj, progress.clone())
-    };
+    let asset = provider.asset(&convert_asset_name(asset_name))?;
+    let thread = asset_manual(asset.box_clone(), progress.clone());
 
-    Ok(Download { progress, thread })
+    Ok(Download {
+        progress,
+        thread,
+        asset,
+    })
 }
 
 pub fn asset_manual(asset: Box<dyn Asset>, progress: Arc<Progress>) -> JoinHandle<Option<File>> {
