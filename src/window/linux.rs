@@ -2,85 +2,119 @@ use gio::prelude::*;
 use gtk::prelude::*;
 
 use super::{percent_text, WindowConfig, UPDATE_INTERVAL};
-use gtk::{Application, ApplicationWindow, Label, ProgressBar};
 use std::error::Error;
+use std::rc::Rc;
 
 pub fn show(wc: WindowConfig) -> Result<(), Box<dyn Error>> {
-    let application = create()?;
-    application.connect_activate(move |app| {
-        activate(app, wc.clone());
-    });
-    application.run(&[]);
-
+    let app = ProgressApp::new(wc)?;
+    app.run();
     Ok(())
 }
 
-fn create() -> Result<Application, Box<dyn Error>> {
-    let application = Application::new(
-        Some("com.github.amionsky.updater.progress"),
-        Default::default(),
-    )?;
-
-    Ok(application)
+struct ProgressApp {
+    app: gtk::Application,
 }
 
-fn activate(app: &Application, wc: WindowConfig) {
-    let window = ApplicationWindow::new(app);
-    window.set_title(wc.title());
-    window.set_position(gtk::WindowPosition::Center);
+impl ProgressApp {
+    pub fn new(wc: WindowConfig) -> Result<Self, Box<dyn Error>> {
+        let app = gtk::Application::new(
+            Some("com.github.amionsky.updater.progress"),
+            Default::default(),
+        )?;
 
-    let basebox = gtk::Box::new(gtk::Orientation::Vertical, 8);
-    basebox.set_property_margin(16);
-    basebox.set_property_width_request(360);
-    window.add(&basebox);
+        let wc = Rc::new(wc);
+        app.connect_activate(move |app| {
+            let state = Rc::new(ProgressAppState::new(&app, wc.clone()));
+            Self::activate(state);
+        });
 
-    // Val
-    let percent = wc.progress().percent();
+        Ok(Self { app })
+    }
 
-    // Labels
-    let labelbox = gtk::Box::new(gtk::Orientation::Horizontal, 8);
-    basebox.add(&labelbox);
+    pub fn run(&self) {
+        self.app.run(&[]);
+    }
 
-    let label_action = Label::new(Some(wc.label()));
-    label_action.set_hexpand(true);
-    label_action.set_halign(gtk::Align::Start);
-    labelbox.add(&label_action);
-    let label_percent = Label::new(Some(&percent_text(percent)));
-    label_percent.set_halign(gtk::Align::End);
-    labelbox.add(&label_percent);
+    fn activate(s: Rc<ProgressAppState>) {
+        let sc = s.clone();
+        gtk::timeout_add(UPDATE_INTERVAL, move || Self::tick(&sc));
 
-    // Progress bar
-    let progress_bar = ProgressBar::new();
-    progress_bar.set_fraction(percent);
-    basebox.add(&progress_bar);
+        let sc = s.clone();
+        s.window.connect_delete_event(move |_, _| Self::close(&sc));
 
-    // Tick
-    let wnd_clone = window.clone();
-    let progress = wc.progress().clone();
-    gtk::timeout_add(UPDATE_INTERVAL, move || {
-        if progress.complete() {
-            wnd_clone.close();
+        s.window.show_all();
+    }
+
+    fn tick(state: &Rc<ProgressAppState>) -> Continue {
+        if state.wc.progress().complete() {
+            state.window.close();
             return Continue(false);
         }
 
-        let percent = progress.percent();
-        progress_bar.set_fraction(percent);
-        label_percent.set_text(&percent_text(percent));
+        let percent = state.wc.progress().percent();
+        state.progress_bar.set_fraction(percent);
+        state.percent_label.set_text(&percent_text(percent));
 
         Continue(true)
-    });
+    }
 
-    let progress = wc.progress().clone();
-    let cancelled = wc.cancelled().clone();
-    window.connect_delete_event(move |_, _| {
+    fn close(state: &Rc<ProgressAppState>) -> Inhibit {
         use std::sync::atomic::Ordering;
 
-        if !progress.complete() {
-            cancelled.store(true, Ordering::Release);
+        if !state.wc.progress().complete() {
+            state.wc.cancelled().store(true, Ordering::Release);
         }
 
         Inhibit(false)
-    });
+    }
+}
 
-    window.show_all();
+struct ProgressAppState {
+    wc: Rc<WindowConfig>,
+    window: gtk::ApplicationWindow,
+    percent_label: gtk::Label,
+    progress_bar: gtk::ProgressBar,
+}
+
+impl ProgressAppState {
+    pub fn new(app: &gtk::Application, wc: Rc<WindowConfig>) -> Self {
+        // Vals
+        let percent = wc.progress().percent();
+
+        // Create widgets
+        let window = gtk::ApplicationWindow::new(app);
+        window.set_title(wc.title());
+        window.set_position(gtk::WindowPosition::Center);
+        window.set_property_width_request(360);
+
+        let base_box = gtk::Box::new(gtk::Orientation::Vertical, 8);
+        base_box.set_property_margin(16);
+
+        let label_box = gtk::Box::new(gtk::Orientation::Horizontal, 8);
+
+        let action_label = gtk::Label::new(Some(wc.label()));
+        action_label.set_hexpand(true);
+        action_label.set_halign(gtk::Align::Start);
+
+        let percent_label = gtk::Label::new(Some(&percent_text(percent)));
+        percent_label.set_halign(gtk::Align::End);
+
+        let progress_bar = gtk::ProgressBar::new();
+        progress_bar.set_fraction(percent);
+
+        // Add widgets
+        window.add(&base_box);
+        base_box.add(&label_box);
+        base_box.add(&progress_bar);
+        label_box.add(&action_label);
+        label_box.add(&percent_label);
+
+        // Return
+        Self {
+            wc,
+            window,
+            percent_label,
+            progress_bar,
+        }
+    }
 }
