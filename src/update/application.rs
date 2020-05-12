@@ -29,12 +29,19 @@ pub fn application<P: AsRef<Path>>(
     // Start download
     let dl = download::asset(&*provider, &cfg.update.asset_name)?;
 
-    #[cfg(feature = "progress-window")]
-    crate::window::show(crate::window::WindowConfig::new(
-        format!("{} Updater", &cfg.application.name),
-        format!("Downloading {:.2} MB", dl.asset.size() as f64 / 1_000_000.0),
-        dl.progress,
-    ))?;
+    #[cfg(feature = "window")]
+    {
+        let cancelled = crate::window::show(crate::window::WindowConfig::new(
+            format!("{} Updater", &cfg.application.name),
+            format!("Downloading {:.2} MB", dl.asset.size() as f64 / 1_000_000.0),
+            dl.progress,
+        ))?;
+
+        if cancelled {
+            info!("User cancelled the update! Exiting...");
+            std::process::exit(0);
+        }
+    }
 
     // Wait for the download to finish
     let file = if let Ok(Some(file)) = dl.thread.join() {

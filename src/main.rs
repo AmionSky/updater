@@ -8,7 +8,7 @@ mod provider;
 mod update;
 mod version;
 
-#[cfg(feature = "progress-window")]
+#[cfg(feature = "window")]
 mod window;
 
 use config::{Config, Verifiable};

@@ -58,7 +58,7 @@ impl ProgressApp {
 
     fn timer_tick(&self) {
         if self.wc.progress().complete() {
-            self.complete_exit();
+            nwg::stop_thread_dispatch();
             return;
         }
 
@@ -68,10 +68,7 @@ impl ProgressApp {
     }
 
     fn user_exit(&self) {
-        nwg::stop_thread_dispatch();
-    }
-
-    fn complete_exit(&self) {
+        self.wc.set_cancelled(true);
         nwg::stop_thread_dispatch();
     }
 }
