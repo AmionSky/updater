@@ -56,17 +56,30 @@ fn activate(app: &Application, wc: WindowConfig) {
 
     // Tick
     let wnd_clone = window.clone();
+    let progress = wc.progress().clone();
     gtk::timeout_add(UPDATE_INTERVAL, move || {
-        if wc.progress().complete() {
+        if progress.complete() {
             wnd_clone.close();
             return Continue(false);
         }
 
-        let percent = wc.progress().percent();
+        let percent = progress.percent();
         progress_bar.set_fraction(percent);
         label_percent.set_text(&percent_text(percent));
 
         Continue(true)
+    });
+
+    let progress = wc.progress().clone();
+    let cancelled = wc.cancelled().clone();
+    window.connect_delete_event(move |_, _| {
+        use std::sync::atomic::Ordering;
+
+        if !progress.complete() {
+            cancelled.store(true, Ordering::Release);
+        }
+
+        Inhibit(false)
     });
 
     window.show_all();

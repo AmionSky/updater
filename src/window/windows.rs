@@ -68,7 +68,8 @@ impl ProgressApp {
     }
 
     fn user_exit(&self) {
-        self.wc.set_cancelled(true);
+        use std::sync::atomic::Ordering;
+        self.wc.cancelled().store(true, Ordering::Release);
         nwg::stop_thread_dispatch();
     }
 }

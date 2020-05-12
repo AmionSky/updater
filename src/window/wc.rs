@@ -1,5 +1,5 @@
 use crate::update::Progress;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 #[derive(Default, Debug, Clone)]
@@ -34,9 +34,5 @@ impl WindowConfig {
 
     pub fn cancelled(&self) -> &Arc<AtomicBool> {
         &self.cancelled
-    }
-
-    pub fn set_cancelled(&self, val: bool) {
-        self.cancelled.store(val, Ordering::Release);
     }
 }
