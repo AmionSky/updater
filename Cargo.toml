@@ -30,7 +30,7 @@ gtk = { version = "0.8", features = ["v3_16"], optional = true }
 gio = { version = "0.8", features = ["v2_44"], optional = true }
 
 [features]
-default = []
+default = ["window"]
 window = ["gtk", "gio", "nwg"]
 
 [profile.dev.package."*"]
