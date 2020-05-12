@@ -13,7 +13,7 @@ mod window;
 
 use config::{Config, Verifiable};
 use locker::Locker;
-use log::{error, info};
+use log::{error, info, warn};
 use semver::Version;
 use std::error::Error;
 use std::path::PathBuf;
@@ -33,7 +33,13 @@ fn start(cfg: &Config) {
 
     let mut version = version::read_file(version::app_file(&working_dir));
     if version.is_some() {
-        info!("Current version: {}", version.as_ref().unwrap());
+        // Check if the currently installed version's executable exist
+        if !launcher::check(&working_dir, version.as_ref().unwrap(), &cfg.application) {
+            warn!("Currently installed version not found!");
+            version = None;
+        } else {
+            info!("Current version: {}", version.as_ref().unwrap());
+        }
     }
 
     // Launch application if needed
