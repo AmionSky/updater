@@ -1,5 +1,5 @@
 use super::download;
-use super::zip;
+use super::extract;
 use crate::config::{Config, ProviderConfig};
 use crate::provider::{GitHubProvider, Provider};
 use download::Download;
@@ -50,7 +50,7 @@ pub fn application<P: AsRef<Path>>(
     std::fs::create_dir(&install_path)?;
 
     // Unpack asset
-    zip::extract(file, &install_path)?;
+    extract::asset(dl.asset.name(), file, &install_path)?;
 
     // Done
     info!("Update successful!");

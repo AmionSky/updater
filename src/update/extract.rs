@@ -1,9 +1,21 @@
+use flate2::read::GzDecoder;
 use std::error::Error;
 use std::fs::{self, File};
 use std::path::Path;
+use tar::Archive as TarArchive;
 use zip::ZipArchive;
 
-pub fn extract<P: AsRef<Path>>(zip: File, target: P) -> Result<(), Box<dyn Error>> {
+pub fn asset<P: AsRef<Path>>(name: &str, archive: File, target: P) -> Result<(), Box<dyn Error>> {
+    if name.ends_with(".zip") {
+        return zip(archive, &target);
+    } else if name.ends_with(".tar.gz") {
+        return targz(archive, &target);
+    }
+
+    Err("Unknown archive format!".into())
+}
+
+pub fn zip<P: AsRef<Path>>(zip: File, target: P) -> Result<(), Box<dyn Error>> {
     let mut archive = ZipArchive::new(zip)?;
 
     for i in 0..archive.len() {
@@ -36,6 +48,14 @@ pub fn extract<P: AsRef<Path>>(zip: File, target: P) -> Result<(), Box<dyn Error
             }
         }
     }
+
+    Ok(())
+}
+
+pub fn targz<P: AsRef<Path>>(targz: File, target: P) -> Result<(), Box<dyn Error>> {
+    let tar = GzDecoder::new(targz);
+    let mut archive = TarArchive::new(tar);
+    archive.unpack(target)?;
 
     Ok(())
 }
