@@ -43,9 +43,15 @@ impl Provider for GitHubProvider {
     }
 
     fn fetch(&mut self) -> Result<(), Box<dyn Error>> {
-        let release: GitHubRelease = json::from_reader(ureq::get(&self.url).call().into_reader())?;
-        self.release = Some(release);
-        Ok(())
+        let release: GitHubResponse = json::from_reader(ureq::get(&self.url).call().into_reader())?;
+
+        match release {
+            GitHubResponse::Release(release) => {
+                self.release = Some(release);
+                Ok(())
+            }
+            GitHubResponse::Error(err) => Err(err.message.into()),
+        }
     }
 
     fn version(&self) -> Result<Version, Box<dyn Error>> {
@@ -87,6 +93,18 @@ impl Verifiable for GitHubProviderSettings {
 
         Ok(())
     }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+enum GitHubResponse {
+    Release(GitHubRelease),
+    Error(GitHubError),
+}
+
+#[derive(Debug, Deserialize)]
+struct GitHubError {
+    message: String,
 }
 
 #[derive(Debug, Deserialize)]
