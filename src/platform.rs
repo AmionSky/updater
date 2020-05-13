@@ -9,3 +9,9 @@ pub const ARCH: &str = "x64";
 pub const OS: &str = "linux";
 #[cfg(target_os = "windows")]
 pub const OS: &str = "win";
+
+// Executable extension
+#[cfg(target_os = "linux")]
+pub const EXE: &str = "";
+#[cfg(target_os = "windows")]
+pub const EXE: &str = "exe";

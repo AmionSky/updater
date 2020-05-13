@@ -27,7 +27,9 @@ pub fn check<P: AsRef<Path>>(wd: P, version: &Version, app_cfg: &ApplicationConf
 }
 
 fn resolve_path<P: AsRef<Path>, Q: AsRef<Path>, R: AsRef<Path>>(wd: P, ver: Q, rel: R) -> PathBuf {
-    [wd.as_ref(), ver.as_ref(), rel.as_ref()].iter().collect()
+    let mut path: PathBuf = [wd.as_ref(), ver.as_ref(), rel.as_ref()].iter().collect();
+    path.set_extension(crate::platform::EXE);
+    path
 }
 
 #[cfg(test)]
