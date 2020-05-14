@@ -19,8 +19,11 @@ pub trait Provider {
     /// Returns the downloadable assets of the latest release.
     fn assets(&self) -> Result<Vec<&dyn Asset>, Box<dyn Error>>;
 
-    /// Returns the downloadable assets of the latest release.
+    /// Returns the downloadable asset with the specified name from the latest release.
     fn asset(&self, name: &str) -> Result<Box<dyn Asset>, Box<dyn Error>>;
+
+    /// Searches and returns for the specified asset
+    fn find_asset(&self, name: &str) -> Result<Box<dyn Asset>, Box<dyn Error>>;
 }
 
 pub trait Asset: Send {

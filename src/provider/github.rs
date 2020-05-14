@@ -77,6 +77,15 @@ impl Provider for GitHubProvider {
             None => Err("Asset not found".into()),
         }
     }
+
+    fn find_asset(&self, name: &str) -> Result<Box<dyn Asset>, Box<dyn Error>> {
+        let release = self.release()?;
+
+        match release.assets.iter().find(|a| a.name().starts_with(name)) {
+            Some(asset) => Ok(asset.box_clone()),
+            None => Err("Asset not found".into()),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]

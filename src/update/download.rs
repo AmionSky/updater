@@ -15,7 +15,7 @@ pub struct Download {
 
 pub fn asset(provider: &dyn Provider, asset_name: &str) -> Result<Download, Box<dyn Error>> {
     let progress = Arc::new(Progress::default());
-    let asset = provider.asset(&convert_asset_name(asset_name))?;
+    let asset = provider.find_asset(&convert_asset_name(asset_name))?;
     let thread = asset_manual(asset.box_clone(), progress.clone());
 
     Ok(Download {
