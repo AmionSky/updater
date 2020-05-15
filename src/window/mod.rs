@@ -12,8 +12,8 @@ mod windows;
 
 const UPDATE_INTERVAL: u32 = 100;
 
-/// Show the progress window
-/// Returns true if the user closed the window
+/// Show the progress window.
+/// Returns true if the user closed the window.
 pub fn show(wc: WindowConfig) -> Result<bool, Box<dyn Error>> {
     let cancelled = wc.cancelled().clone();
 
