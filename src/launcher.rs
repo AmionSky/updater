@@ -38,7 +38,8 @@ mod tests {
 
     #[test]
     fn check_resolve_path() {
-        let correct = PathBuf::from("/check/this/fn");
+        let mut correct = PathBuf::from("/check/this/fn");
+        correct.set_extension(crate::platform::EXE);
         let path = resolve_path("/check", "this/", "fn");
         assert_eq!(correct, path);
     }
