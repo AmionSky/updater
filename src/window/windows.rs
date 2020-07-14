@@ -81,12 +81,12 @@ mod basic_app_ui {
     use std::rc::Rc;
 
     pub struct ProgressAppUi {
-        inner: ProgressApp,
+        inner: Rc<ProgressApp>,
         default_handler: RefCell<Option<nwg::EventHandler>>,
     }
 
-    impl nwg::NativeUi<Self, Rc<ProgressAppUi>> for ProgressApp {
-        fn build_ui(mut data: Self) -> Result<Rc<ProgressAppUi>, nwg::NwgError> {
+    impl nwg::NativeUi<ProgressAppUi> for ProgressApp {
+        fn build_ui(mut data: Self) -> Result<ProgressAppUi, nwg::NwgError> {
             // Vals
             let percent = data.wc.progress().percent();
 
@@ -136,25 +136,29 @@ mod basic_app_ui {
                 .build(&mut data.timer)?;
 
             // Wrap-up
-            let ui = Rc::new(ProgressAppUi {
-                inner: data,
+            let ui = ProgressAppUi {
+                inner: Rc::new(data),
                 default_handler: Default::default(),
-            });
+            };
 
             // Events
-            let evt_ui = ui.clone();
-            let handle_events = move |evt, _evt_data, handle| match evt {
-                nwg::Event::OnTimerTick => {
-                    if handle == evt_ui.timer {
-                        ProgressApp::timer_tick(&evt_ui.inner);
+            let evt_ui = Rc::downgrade(&ui.inner);
+            let handle_events = move |evt, _evt_data, handle| {
+                if let Some(ui) = evt_ui.upgrade() {
+                    match evt {
+                        nwg::Event::OnTimerTick => {
+                            if handle == ui.timer {
+                                ui.timer_tick();
+                            }
+                        }
+                        nwg::Event::OnWindowClose => {
+                            if handle == ui.window {
+                                ui.user_exit();
+                            }
+                        }
+                        _ => {}
                     }
                 }
-                nwg::Event::OnWindowClose => {
-                    if handle == evt_ui.window {
-                        ProgressApp::user_exit(&evt_ui.inner);
-                    }
-                }
-                _ => {}
             };
 
             *ui.default_handler.borrow_mut() = Some(nwg::full_bind_event_handler(
