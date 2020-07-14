@@ -10,11 +10,11 @@ license = "MIT"
 [dependencies]
 serde = { version = "1", features = ["derive"] }
 json = { package = "serde_json", version = "1" }
-simplelog  = "0.7"
+simplelog  = "0.8"
 toml = "0.5"
 log = "0.4"
 fs2 = "0.4"
-semver = "0.9"
+semver = "0.10"
 ureq = "1"
 regex = "1"
 lazy_static = "1"
