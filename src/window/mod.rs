@@ -33,7 +33,6 @@ fn read_atomic(atomic: &AtomicBool) -> bool {
     atomic.load(Ordering::Acquire)
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -50,6 +49,7 @@ mod tests {
             format!("{} Updater", "Test Window"),
             format!("Downloading {:.2} MB", 64),
             ap,
-        )).unwrap();
+        ))
+        .unwrap();
     }
 }

@@ -63,8 +63,14 @@ impl ProgressApp {
         }
 
         let percent = self.wc.progress().percent();
+        let indeterminate = self.wc.progress().indeterminate();
+
         self.progress_label.set_text(&percent_text(percent));
         self.progress_bar.set_pos(calc_step(percent));
+
+        if !indeterminate {
+            self.progress_bar.set_marquee(indeterminate, 0);
+        }
     }
 
     fn user_exit(&self) {
@@ -126,6 +132,8 @@ mod basic_app_ui {
                 .position((10, 31))
                 .range(0..338)
                 .pos(calc_step(percent))
+                .flags(nwg::ProgressBarFlags::VISIBLE | nwg::ProgressBarFlags::MARQUEE)
+                .marquee(data.wc.progress().indeterminate(), 0)
                 .parent(&data.window)
                 .build(&mut data.progress_bar)?;
 
