@@ -133,7 +133,7 @@ mod basic_app_ui {
                 .range(0..338)
                 .pos(calc_step(percent))
                 .flags(nwg::ProgressBarFlags::VISIBLE | nwg::ProgressBarFlags::MARQUEE)
-                .marquee(data.wc.progress().indeterminate(), 0)
+                .marquee(data.wc.progress().indeterminate())
                 .parent(&data.window)
                 .build(&mut data.progress_bar)?;
 
