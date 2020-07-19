@@ -17,9 +17,9 @@ ureq = "1"
 regex = "1"
 lazy_static = "1"
 tempfile = "3"
-zip = "0.5"
-flate2 = "1"
-tar = "0.4"
+zip = { version = "0.5", optional = true }
+flate2 = { version = "1", optional = true }
+tar = { version = "0.4", optional = true }
 
 [target.'cfg(target_os="windows")'.dependencies]
 nwg = { package = "native-windows-gui", git = "https://github.com/AmionSky/native-windows-gui", branch = "marquee-fix",  features = ["progress-bar","timer"], optional = true }
@@ -29,8 +29,9 @@ gtk = { version = "0.9", features = ["v3_16"], optional = true }
 gio = { version = "0.9", features = ["v2_44"], optional = true }
 
 [features]
-default = ["window"]
+default = []
 window = ["gtk", "gio", "nwg"]
+extract = ["zip", "flate2", "tar"]
 
 [profile.release]
 opt-level = 3

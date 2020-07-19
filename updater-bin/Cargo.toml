@@ -5,7 +5,7 @@ authors = ["Csányi István <csanyistvan02@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-updater = { path = "../updater" }
+updater = { path = "../updater", features = ["window", "extract"] }
 serde = { version = "1", features = ["derive"] }
 toml = "0.5"
 log = "0.4"

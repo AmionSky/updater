@@ -32,24 +32,3 @@ fn percent_text(percent: f64) -> String {
 fn read_atomic(atomic: &AtomicBool) -> bool {
     atomic.load(Ordering::Acquire)
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_window() {
-        use crate::update::Progress;
-        use std::sync::Arc;
-
-        let p = Progress::default();
-        let ap = Arc::new(p);
-
-        let _ = show(WindowConfig::new(
-            format!("{} Updater", "Test Window"),
-            format!("Downloading {:.2} MB", 64),
-            ap,
-        ))
-        .unwrap();
-    }
-}
