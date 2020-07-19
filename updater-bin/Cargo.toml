@@ -1,0 +1,16 @@
+[package]
+name = "updater-bin"
+version = "0.3.0"
+authors = ["Csányi István <csanyistvan02@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+updater = { path = "../updater" }
+serde = { version = "1", features = ["derive"] }
+toml = "0.5"
+log = "0.4"
+semver = "0.10"
+simplelog  = "0.8"
+
+[target.'cfg(target_os="windows")'.dependencies]
+winapi = { version = "0.3", features = ["wincon"] }

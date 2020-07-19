@@ -1,5 +1,4 @@
 use super::{Asset, Provider};
-use crate::config::Verifiable;
 use crate::version;
 use semver::Version;
 use serde::Deserialize;
@@ -28,12 +27,6 @@ impl GitHubProvider {
             Some(rel) => Ok(&rel),
             None => Err("No fetched content found!".into()),
         }
-    }
-}
-
-impl From<&GitHubProviderSettings> for GitHubProvider {
-    fn from(settings: &GitHubProviderSettings) -> Self {
-        Self::new(&settings.repository)
     }
 }
 
@@ -85,22 +78,6 @@ impl Provider for GitHubProvider {
             Some(asset) => Ok(asset.box_clone()),
             None => Err("Asset not found".into()),
         }
-    }
-}
-
-#[derive(Debug, Deserialize)]
-pub struct GitHubProviderSettings {
-    /// The github repository (*user*/*repository*)
-    pub repository: String,
-}
-
-impl Verifiable for GitHubProviderSettings {
-    fn verify(&self) -> Result<(), Box<dyn Error>> {
-        if self.repository.is_empty() {
-            return Err("GitHub repository field is empty".into());
-        }
-
-        Ok(())
     }
 }
 

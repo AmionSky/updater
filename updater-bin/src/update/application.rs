@@ -1,12 +1,10 @@
-use super::download;
-use super::extract;
 use crate::config::{Config, ProviderConfig};
-use crate::provider::{GitHubProvider, Provider};
-use download::Download;
 use log::info;
 use semver::Version;
 use std::error::Error;
 use std::path::Path;
+use updater::provider::{GitHubProvider, Provider};
+use updater::update::{download, extract};
 
 pub fn application<P: AsRef<Path>>(
     wd: P,
@@ -28,9 +26,9 @@ pub fn application<P: AsRef<Path>>(
     info!("Downloading {} v{}", &cfg.application.name, &latest);
 
     // Start download
-    let dl = download::asset(&*provider, &cfg.update.asset_name)?;
+    let aname = super::convert_asset_name(&cfg.update.asset_name);
+    let dl = download::asset(&*provider, &aname)?;
 
-    #[cfg(feature = "window")]
     show_window(&cfg, &dl)?;
 
     // Wait for the download to finish
@@ -64,9 +62,8 @@ fn get_provider(p_cfg: &ProviderConfig) -> Result<Box<dyn Provider>, Box<dyn Err
     Err("No provider was specified!".into())
 }
 
-#[cfg(feature = "window")]
-fn show_window(cfg: &Config, dl: &Download) -> Result<(), Box<dyn Error>> {
-    use crate::window::{self, WindowConfig};
+fn show_window(cfg: &Config, dl: &download::Download) -> Result<(), Box<dyn Error>> {
+    use updater::window::{self, WindowConfig};
 
     if cfg.update.show_progress {
         let cancelled = window::show(WindowConfig::new(

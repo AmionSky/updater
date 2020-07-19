@@ -15,7 +15,7 @@ pub struct Download {
 
 pub fn asset(provider: &dyn Provider, asset_name: &str) -> Result<Download, Box<dyn Error>> {
     let progress = Arc::new(Progress::default());
-    let asset = provider.find_asset(&convert_asset_name(asset_name))?;
+    let asset = provider.find_asset(asset_name)?;
     let thread = asset_manual(asset.box_clone(), progress.clone());
 
     Ok(Download {
@@ -47,12 +47,6 @@ pub fn asset_manual(asset: Box<dyn Asset>, progress: Arc<Progress>) -> JoinHandl
         progress.set_complete(true);
         res
     })
-}
-
-pub fn convert_asset_name(name: &str) -> String {
-    use crate::platform::{ARCH, OS};
-    let new_name = name.replace("<os>", OS);
-    new_name.replace("<arch>", ARCH)
 }
 
 fn download_inner(asset: Box<dyn Asset>, progress: &Arc<Progress>) -> Result<File, Box<dyn Error>> {

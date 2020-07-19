@@ -1,5 +1,3 @@
-use super::download;
-use crate::provider::{GitHubProvider, Provider};
 use crate::version::PKG_VERSION;
 use log::{error, info};
 use semver::Version;
@@ -7,6 +5,8 @@ use std::error::Error;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
+use updater::provider::{GitHubProvider, Provider};
+use updater::update::download;
 
 pub fn self_exe<P: AsRef<Path>>(wd: P) -> Result<(), Box<dyn Error>> {
     let temp_path = wd.as_ref().join("updater.old");
@@ -29,7 +29,8 @@ pub fn self_exe<P: AsRef<Path>>(wd: P) -> Result<(), Box<dyn Error>> {
     info!("Downloading updater v{}", &latest);
 
     // Start download
-    let dl = download::asset(&provider, "updater-<os>-<arch>.exe")?;
+    let aname = super::convert_asset_name("updater-<os>-<arch>.exe");
+    let dl = download::asset(&provider, &aname)?;
     // Wait for the download to finish
     let file = if let Ok(Some(file)) = dl.thread.join() {
         file

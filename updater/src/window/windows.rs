@@ -2,6 +2,7 @@ use super::{percent_text, WindowConfig, UPDATE_INTERVAL};
 use log::error;
 use nwg::NativeUi;
 use std::error::Error;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 pub fn show(wc: WindowConfig) -> Result<(), Box<dyn Error>> {
     if let Err(e) = nwg::init() {
@@ -41,6 +42,7 @@ pub struct ProgressApp {
     progress_label: nwg::Label,
     progress_bar: nwg::ProgressBar,
     timer: nwg::Timer,
+    marquee: AtomicBool,
 }
 
 impl ProgressApp {
@@ -53,6 +55,7 @@ impl ProgressApp {
             progress_label: nwg::Label::default(),
             progress_bar: nwg::ProgressBar::default(),
             timer: nwg::Timer::default(),
+            marquee: AtomicBool::new(false),
         }
     }
 
@@ -65,16 +68,22 @@ impl ProgressApp {
         let percent = self.wc.progress().percent();
         let indeterminate = self.wc.progress().indeterminate();
 
+        // Turn marquee on/off
+        if self.marquee.load(Ordering::Acquire) != indeterminate {
+            self.marquee.store(indeterminate, Ordering::Release);
+            if indeterminate {
+                self.progress_bar.add_style(nwg::ProgressBarFlags::MARQUEE);
+            } else {
+                self.progress_bar
+                    .remove_style(nwg::ProgressBarFlags::MARQUEE);
+            }
+        }
+
         self.progress_label.set_text(&percent_text(percent));
         self.progress_bar.set_pos(calc_step(percent));
-
-        if !indeterminate {
-            self.progress_bar.set_marquee(indeterminate, 0);
-        }
     }
 
     fn user_exit(&self) {
-        use std::sync::atomic::Ordering;
         self.wc.cancelled().store(true, Ordering::Release);
         nwg::stop_thread_dispatch();
     }
@@ -95,6 +104,14 @@ mod basic_app_ui {
         fn build_ui(mut data: Self) -> Result<ProgressAppUi, nwg::NwgError> {
             // Vals
             let percent = data.wc.progress().percent();
+            let indeterminate = data.wc.progress().indeterminate();
+
+            data.marquee.store(indeterminate, Ordering::Release);
+            let pb_flags = if indeterminate {
+                nwg::ProgressBarFlags::VISIBLE | nwg::ProgressBarFlags::MARQUEE
+            } else {
+                nwg::ProgressBarFlags::VISIBLE
+            };
 
             // Font
             nwg::Font::builder()
@@ -132,8 +149,8 @@ mod basic_app_ui {
                 .position((10, 31))
                 .range(0..338)
                 .pos(calc_step(percent))
-                .flags(nwg::ProgressBarFlags::VISIBLE | nwg::ProgressBarFlags::MARQUEE)
-                .marquee(data.wc.progress().indeterminate())
+                .flags(pb_flags)
+                .marquee(true)
                 .parent(&data.window)
                 .build(&mut data.progress_bar)?;
 

@@ -2,21 +2,16 @@
 
 mod config;
 mod launcher;
-mod locker;
 mod platform;
-mod provider;
 mod update;
 mod version;
 
-#[cfg(feature = "window")]
-mod window;
-
 use config::{Config, Verifiable};
-use locker::Locker;
 use log::{error, info, warn};
 use semver::Version;
 use std::error::Error;
 use std::path::PathBuf;
+use updater::Locker;
 
 fn main() {
     #[cfg(target_os = "windows")]
