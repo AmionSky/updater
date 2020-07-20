@@ -51,18 +51,23 @@ impl ProgressApp {
             return Continue(false);
         }
 
-        let percent = state.wc.progress().percent();
-        state.progress_bar.set_fraction(percent);
-        state.percent_label.set_text(&percent_text(percent));
+        state.action_label.set_text(&state.wc.label());
+
+        if state.wc.progress().indeterminate() {
+            state.progress_bar.pulse();
+            state.percent_label.set_text("");
+        } else {
+            let percent = state.wc.progress().percent();
+            state.progress_bar.set_fraction(percent);
+            state.percent_label.set_text(&percent_text(percent));
+        }
 
         Continue(true)
     }
 
     fn close(state: &Rc<ProgressAppState>) -> Inhibit {
-        use std::sync::atomic::Ordering;
-
         if !state.wc.progress().complete() {
-            state.wc.cancelled().store(true, Ordering::Release);
+            state.wc.progress().set_cancelled(true);
         }
 
         Inhibit(false)
@@ -72,6 +77,7 @@ impl ProgressApp {
 struct ProgressAppState {
     wc: Rc<WindowConfig>,
     window: gtk::ApplicationWindow,
+    action_label: gtk::Label,
     percent_label: gtk::Label,
     progress_bar: gtk::ProgressBar,
 }
@@ -92,7 +98,7 @@ impl ProgressAppState {
 
         let label_box = gtk::Box::new(gtk::Orientation::Horizontal, 8);
 
-        let action_label = gtk::Label::new(Some(wc.label()));
+        let action_label = gtk::Label::new(Some(&wc.label()));
         action_label.set_hexpand(true);
         action_label.set_halign(gtk::Align::Start);
 
@@ -113,6 +119,7 @@ impl ProgressAppState {
         Self {
             wc,
             window,
+            action_label,
             percent_label,
             progress_bar,
         }
