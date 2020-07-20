@@ -5,10 +5,9 @@ use std::error::Error;
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
+use std::sync::Arc;
 use updater::provider::{GitHubProvider, Provider};
 use updater::update::download;
-use std::sync::Arc;
-use std::sync::atomic::AtomicBool;
 use updater::update::Progress;
 
 pub fn self_exe<P: AsRef<Path>>(wd: P) -> Result<(), Box<dyn Error>> {
@@ -35,7 +34,7 @@ pub fn self_exe<P: AsRef<Path>>(wd: P) -> Result<(), Box<dyn Error>> {
     let aname = super::convert_asset_name("updater-<os>-<arch>.exe");
     let progress = Arc::new(Progress::default());
     let asset = provider.find_asset(&aname)?;
-    let thread = download::asset(asset.box_clone(), progress.clone(), Arc::new(AtomicBool::new(false)));
+    let thread = download::asset(asset.box_clone(), progress);
     // Wait for the download to finish
     let file = if let Ok(Some(file)) = thread.join() {
         file

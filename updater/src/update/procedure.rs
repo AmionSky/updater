@@ -1,7 +1,6 @@
 use super::{Progress, StepAction, UpdateStep};
 use log::info;
 use std::error::Error;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, RwLock};
 use std::thread::JoinHandle;
 
@@ -10,7 +9,6 @@ pub struct UpdateProcedure<T> {
     progress: Arc<Progress>,
     steps: Vec<Box<dyn UpdateStep<T>>>,
     data: T,
-    cancelled: Arc<AtomicBool>,
 }
 
 impl<T> UpdateProcedure<T> {
@@ -20,7 +18,6 @@ impl<T> UpdateProcedure<T> {
             progress: Arc::new(Progress::default()),
             steps: Vec::new(),
             data,
-            cancelled: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -28,8 +25,16 @@ impl<T> UpdateProcedure<T> {
         self.steps.push(step)
     }
 
-    pub fn cancelled(&self) -> &Arc<AtomicBool> {
-        &self.cancelled
+    pub fn title(&self) -> &String {
+        &self.title
+    }
+
+    pub fn progress(&self) -> &Arc<Progress> {
+        &self.progress
+    }
+
+    pub fn steps(&self) -> &Vec<Box<dyn UpdateStep<T>>> {
+        &self.steps
     }
 
     pub fn data(&self) -> &T {
@@ -49,7 +54,7 @@ impl<T> UpdateProcedure<T> {
                 *wl = step.label(&self.data).to_string();
             }
 
-            match step.exec(&mut self.data, &self.progress, &self.cancelled)? {
+            match step.exec(&mut self.data, &self.progress)? {
                 StepAction::Cancel => break,
                 StepAction::Complete => break,
                 StepAction::Continue => {}
@@ -59,13 +64,13 @@ impl<T> UpdateProcedure<T> {
                 return Err("Verification failed".into());
             }
 
-            if self.cancelled.load(Ordering::Acquire) {
+            if self.progress.cancelled() {
                 break;
             }
         }
 
         self.progress.set_complete(true);
-        if self.cancelled.load(Ordering::Acquire) {
+        if self.progress.cancelled() {
             info!("Update cancelled!")
         } else {
             info!("Update successful!");
@@ -81,12 +86,7 @@ impl<T> UpdateProcedure<T> {
     fn open_window(&self) -> (JoinHandle<()>, Arc<RwLock<String>>) {
         use crate::window::{self, WindowConfig};
         let label = Arc::new(RwLock::new(String::from("Initializing...")));
-        let config = WindowConfig::new(
-            self.title.clone(),
-            label.clone(),
-            self.progress.clone(),
-            self.cancelled.clone(),
-        );
+        let config = WindowConfig::new(self.title.clone(), label.clone(), self.progress.clone());
 
         let handle = std::thread::spawn(|| {
             // TODO: Better error handling?

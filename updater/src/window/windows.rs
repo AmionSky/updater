@@ -86,7 +86,7 @@ impl ProgressApp {
     }
 
     fn user_exit(&self) {
-        self.wc.cancelled().store(true, Ordering::Release);
+        self.wc.progress().set_cancelled(true);
         nwg::stop_thread_dispatch();
     }
 }

@@ -1,35 +1,14 @@
 use super::progress::Progress;
-use crate::provider::{Asset, Provider};
+use crate::provider::Asset;
 use log::{error, info};
 use std::error::Error;
 use std::fs::File;
 use std::io::{ErrorKind, Read, Seek, SeekFrom, Write};
 use std::sync::Arc;
 use std::thread::JoinHandle;
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-};
-/*
-pub struct Download {
-    pub progress: Arc<Progress>,
-    pub thread: JoinHandle<Option<File>>,
-    pub asset: Box<dyn Asset>,
-}
-*/
-/*
-pub fn asset(provider: &dyn Provider, asset_name: &str) -> Result<Download, Box<dyn Error>> {
-    let progress = Arc::new(Progress::default());
-    let asset = provider.find_asset(asset_name)?;
-    let thread = asset_manual(asset.box_clone(), progress.clone());
 
-    Ok(Download {
-        progress,
-        thread,
-        asset,
-    })
-}*/
-
-pub fn asset(asset: Box<dyn Asset>, progress: Arc<Progress>, cancelled: Arc<AtomicBool>) -> JoinHandle<Option<File>> {
+/// Downloads the asset to a temporary location
+pub fn asset(asset: Box<dyn Asset>, progress: Arc<Progress>) -> JoinHandle<Option<File>> {
     std::thread::spawn(move || {
         info!(
             "Downloading {} - {:.2}MB",
@@ -40,18 +19,17 @@ pub fn asset(asset: Box<dyn Asset>, progress: Arc<Progress>, cancelled: Arc<Atom
         progress.set_maximum(asset.size());
         progress.set_indeterminate(false);
 
-        match download_inner(asset, progress, cancelled) {
+        match download_inner(asset, progress) {
             Ok(file) => Some(file),
             Err(e) => {
                 error!("{}", e);
                 None
             }
         }
-        //progress.set_complete(true);
     })
 }
 
-fn download_inner(asset: Box<dyn Asset>, progress: Arc<Progress>, cancelled: Arc<AtomicBool>) -> Result<File, Box<dyn Error>> {
+fn download_inner(asset: Box<dyn Asset>, progress: Arc<Progress>) -> Result<File, Box<dyn Error>> {
     let resp = ureq::get(asset.url()).call();
     if !resp.ok() {
         return Err("Response not OK".into());
@@ -63,7 +41,7 @@ fn download_inner(asset: Box<dyn Asset>, progress: Arc<Progress>, cancelled: Arc
     const BUF_SIZE: usize = 4096;
     let mut buf: [u8; BUF_SIZE] = [0; BUF_SIZE];
     loop {
-        if cancelled.load(Ordering::Acquire) {
+        if progress.cancelled() {
             return Err("Download cancelled!".into());
         }
 

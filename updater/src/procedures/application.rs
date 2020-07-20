@@ -5,7 +5,7 @@ use semver::Version;
 use std::error::Error;
 use std::fs::File;
 use std::path::PathBuf;
-use std::sync::{atomic::{AtomicBool,Ordering}, Arc};
+use std::sync::Arc;
 
 pub struct UpdateData {
     pub provider: Box<dyn Provider>,
@@ -18,14 +18,30 @@ pub struct UpdateData {
     pub file: Option<File>,
 }
 
+impl UpdateData {
+    pub fn new(
+        provider: Box<dyn Provider>,
+        app_name: String,
+        asset_name: String,
+        directory: PathBuf,
+        version: Version,
+    ) -> Self {
+        UpdateData {
+            provider,
+            app_name,
+            asset_name,
+            directory,
+            version,
+            latest: None,
+            asset: None,
+            file: None,
+        }
+    }
+}
+
 pub struct StepCheckVersion;
 impl UpdateStep<UpdateData> for StepCheckVersion {
-    fn exec(
-        &self,
-        data: &mut UpdateData,
-        _: &Arc<Progress>,
-        _: &Arc<AtomicBool>,
-    ) -> Result<StepAction, Box<dyn Error>> {
+    fn exec(&self, data: &mut UpdateData, _: &Arc<Progress>) -> Result<StepAction, Box<dyn Error>> {
         info!("Checking for latest version via {}", data.provider.name());
         data.provider.fetch()?;
 
@@ -42,7 +58,7 @@ impl UpdateStep<UpdateData> for StepCheckVersion {
         Ok(StepAction::Continue)
     }
 
-    fn label(&self, data: &UpdateData) -> String {
+    fn label(&self, _: &UpdateData) -> String {
         "Checking for latest version...".to_string()
     }
 }
@@ -53,7 +69,6 @@ impl UpdateStep<UpdateData> for StepDownload {
         &self,
         data: &mut UpdateData,
         progress: &Arc<Progress>,
-        cancelled: &Arc<AtomicBool>,
     ) -> Result<StepAction, Box<dyn Error>> {
         info!(
             "Downloading {} v{}",
@@ -61,20 +76,15 @@ impl UpdateStep<UpdateData> for StepDownload {
             data.latest.as_ref().unwrap()
         );
 
-        let thread = download::asset(
-            data.asset.as_ref().unwrap().box_clone(),
-            progress.clone(),
-            cancelled.clone(),
-        );
+        let thread = download::asset(data.asset.as_ref().unwrap().box_clone(), progress.clone());
 
         let file = if let Ok(Some(file)) = thread.join() {
             file
-        } else  if cancelled.load(Ordering::Acquire) {
-                return Ok(StepAction::Cancel);
-            } else {
-                return Err("Asset download failed!".into());
-            }
-        ;
+        } else if progress.cancelled() {
+            return Ok(StepAction::Cancel);
+        } else {
+            return Err("Asset download failed!".into());
+        };
 
         data.file = Some(file);
         info!("Download finished!");
@@ -92,12 +102,7 @@ impl UpdateStep<UpdateData> for StepDownload {
 
 pub struct StepInstall;
 impl UpdateStep<UpdateData> for StepInstall {
-    fn exec(
-        &self,
-        data: &mut UpdateData,
-        _: &Arc<Progress>,
-        _: &Arc<AtomicBool>,
-    ) -> Result<StepAction, Box<dyn Error>> {
+    fn exec(&self, data: &mut UpdateData, _: &Arc<Progress>) -> Result<StepAction, Box<dyn Error>> {
         info!("Starting install");
 
         // (Re)Create install folder

@@ -32,6 +32,7 @@ gio = { version = "0.9", features = ["v2_44"], optional = true }
 default = []
 window = ["gtk", "gio", "nwg"]
 extract = ["zip", "flate2", "tar"]
+procedures = []
 
 [profile.release]
 opt-level = 3

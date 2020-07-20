@@ -1,22 +1,19 @@
 use crate::update::Progress;
-use std::sync::atomic::AtomicBool;
-use std::sync::{Arc,RwLock};
+use std::sync::{Arc, RwLock};
 
 #[derive(Default, Debug, Clone)]
 pub struct WindowConfig {
     title: String,
     label: Arc<RwLock<String>>,
     progress: Arc<Progress>,
-    cancelled: Arc<AtomicBool>,
 }
 
 impl WindowConfig {
-    pub fn new(title: String, label: Arc<RwLock<String>>, progress: Arc<Progress>, cancelled: Arc<AtomicBool>) -> Self {
+    pub fn new(title: String, label: Arc<RwLock<String>>, progress: Arc<Progress>) -> Self {
         Self {
             title,
             label,
             progress,
-            cancelled
         }
     }
 
@@ -30,9 +27,5 @@ impl WindowConfig {
 
     pub fn progress(&self) -> &Arc<Progress> {
         &self.progress
-    }
-
-    pub fn cancelled(&self) -> &Arc<AtomicBool> {
-        &self.cancelled
     }
 }
