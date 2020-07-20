@@ -70,7 +70,7 @@ fn start(cfg: &Config) {
 
     // Update self
     if cfg.update.update_self {
-        if let Err(err) = update::self_exe(&working_dir) {
+        if let Err(err) = update::self_exe() {
             error!("Failed to update self: {}", err);
         }
     }
@@ -174,13 +174,3 @@ mod tests {
         assert!(dir.is_dir());
     }
 }
-
-/*
-
-
-if cancelled {
-            info!("User cancelled the update! Exiting...");
-            std::process::exit(0);
-        }
-
-        */

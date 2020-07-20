@@ -11,3 +11,4 @@ mod locker;
 mod version;
 
 pub use locker::Locker;
+pub use semver::Version;
