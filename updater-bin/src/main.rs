@@ -174,3 +174,14 @@ mod tests {
         assert!(dir.is_dir());
     }
 }
+
+
+/*
+
+
+if cancelled {
+            info!("User cancelled the update! Exiting...");
+            std::process::exit(0);
+        }
+
+        */

@@ -6,13 +6,17 @@ use std::fs::File;
 use std::io::{ErrorKind, Read, Seek, SeekFrom, Write};
 use std::sync::Arc;
 use std::thread::JoinHandle;
-
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+};
+/*
 pub struct Download {
     pub progress: Arc<Progress>,
     pub thread: JoinHandle<Option<File>>,
     pub asset: Box<dyn Asset>,
 }
-
+*/
+/*
 pub fn asset(provider: &dyn Provider, asset_name: &str) -> Result<Download, Box<dyn Error>> {
     let progress = Arc::new(Progress::default());
     let asset = provider.find_asset(asset_name)?;
@@ -23,9 +27,9 @@ pub fn asset(provider: &dyn Provider, asset_name: &str) -> Result<Download, Box<
         thread,
         asset,
     })
-}
+}*/
 
-pub fn asset_manual(asset: Box<dyn Asset>, progress: Arc<Progress>) -> JoinHandle<Option<File>> {
+pub fn asset(asset: Box<dyn Asset>, progress: Arc<Progress>, cancelled: Arc<AtomicBool>) -> JoinHandle<Option<File>> {
     std::thread::spawn(move || {
         info!(
             "Downloading {} - {:.2}MB",
@@ -36,20 +40,18 @@ pub fn asset_manual(asset: Box<dyn Asset>, progress: Arc<Progress>) -> JoinHandl
         progress.set_maximum(asset.size());
         progress.set_indeterminate(false);
 
-        let res = match download_inner(asset, &progress) {
+        match download_inner(asset, progress, cancelled) {
             Ok(file) => Some(file),
             Err(e) => {
                 error!("{}", e);
                 None
             }
-        };
-
-        progress.set_complete(true);
-        res
+        }
+        //progress.set_complete(true);
     })
 }
 
-fn download_inner(asset: Box<dyn Asset>, progress: &Arc<Progress>) -> Result<File, Box<dyn Error>> {
+fn download_inner(asset: Box<dyn Asset>, progress: Arc<Progress>, cancelled: Arc<AtomicBool>) -> Result<File, Box<dyn Error>> {
     let resp = ureq::get(asset.url()).call();
     if !resp.ok() {
         return Err("Response not OK".into());
@@ -61,6 +63,10 @@ fn download_inner(asset: Box<dyn Asset>, progress: &Arc<Progress>) -> Result<Fil
     const BUF_SIZE: usize = 4096;
     let mut buf: [u8; BUF_SIZE] = [0; BUF_SIZE];
     loop {
+        if cancelled.load(Ordering::Acquire) {
+            return Err("Download cancelled!".into());
+        }
+
         let len = match reader.read(&mut buf) {
             Ok(0) => break,
             Ok(len) => len,

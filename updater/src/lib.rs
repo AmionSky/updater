@@ -4,8 +4,8 @@ pub mod update;
 #[cfg(feature = "window")]
 pub mod window;
 
-mod config;
 mod locker;
 mod version;
+pub mod procedures;
 
 pub use locker::Locker;

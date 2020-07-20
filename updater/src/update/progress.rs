@@ -56,6 +56,14 @@ impl Progress {
         self.maximum.fetch_add(val, Ordering::AcqRel);
     }
 
+    // Helpers
+    pub fn reset(&self) {
+        self.set_indeterminate(true);
+        self.set_complete(false);
+        self.set_current(0);
+        self.set_maximum(0);
+    }
+
     pub fn percent(&self) -> f64 {
         if self.complete() {
             1.0

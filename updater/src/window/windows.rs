@@ -65,6 +65,7 @@ impl ProgressApp {
             return;
         }
 
+        let label = self.wc.label();
         let percent = self.wc.progress().percent();
         let indeterminate = self.wc.progress().indeterminate();
 
@@ -79,6 +80,7 @@ impl ProgressApp {
             }
         }
 
+        self.action_label.set_text(&label);
         self.progress_label.set_text(&percent_text(percent));
         self.progress_bar.set_pos(calc_step(percent));
     }

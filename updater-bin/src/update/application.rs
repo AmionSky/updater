@@ -1,4 +1,5 @@
 use crate::config::{Config, ProviderConfig};
+use updater::procedures::application::{UpdateData,create};
 use log::info;
 use semver::Version;
 use std::error::Error;
@@ -11,48 +12,22 @@ pub fn application<P: AsRef<Path>>(
     cfg: &Config,
     version: Version,
 ) -> Result<Version, Box<dyn Error>> {
-    let mut provider = get_provider(&cfg.update.provider)?;
-
-    info!("Checking for latest version via {}", provider.name());
-    provider.fetch()?;
-
-    // Check version difference
-    let latest = provider.version()?;
-    if latest <= version {
-        info!("{} is up-to-date", &cfg.application.name);
-        return Ok(version);
-    }
-
-    info!("Downloading {} v{}", &cfg.application.name, &latest);
-
-    // Start download
-    let aname = super::convert_asset_name(&cfg.update.asset_name);
-    let dl = download::asset(&*provider, &aname)?;
-
-    show_window(&cfg, &dl)?;
-
-    // Wait for the download to finish
-    let file = if let Ok(Some(file)) = dl.thread.join() {
-        file
-    } else {
-        return Err("Asset download failed!".into());
+    let provider = get_provider(&cfg.update.provider)?;
+    let data = UpdateData{
+        provider,
+        app_name: cfg.application.name.clone(),
+        asset_name: super::convert_asset_name(&cfg.update.asset_name),
+        directory: wd.as_ref().to_path_buf(),
+        version,
+        latest:None,
+        asset: None,
+        file:None,
     };
 
-    info!("Download finished! Starting install");
-
-    // (Re)Create install folder
-    let install_path = wd.as_ref().join(latest.to_string());
-    if install_path.is_dir() {
-        std::fs::remove_dir_all(&install_path)?;
-    }
-    std::fs::create_dir(&install_path)?;
-
-    // Unpack asset
-    extract::asset(dl.asset.name(), file, &install_path)?;
-
-    // Done
-    info!("Update successful!");
-    Ok(latest)
+    let mut procedure = create(data);
+    procedure.execute()?;
+    
+    Ok(procedure.data().latest.as_ref().unwrap().clone())
 }
 
 fn get_provider(p_cfg: &ProviderConfig) -> Result<Box<dyn Provider>, Box<dyn Error>> {
@@ -60,23 +35,4 @@ fn get_provider(p_cfg: &ProviderConfig) -> Result<Box<dyn Provider>, Box<dyn Err
         return Ok(Box::new(GitHubProvider::from(gh_cfg)));
     }
     Err("No provider was specified!".into())
-}
-
-fn show_window(cfg: &Config, dl: &download::Download) -> Result<(), Box<dyn Error>> {
-    use updater::window::{self, WindowConfig};
-
-    if cfg.update.show_progress {
-        let cancelled = window::show(WindowConfig::new(
-            format!("{} Updater", &cfg.application.name),
-            format!("Downloading {:.2} MB", dl.asset.size() as f64 / 1_000_000.0),
-            dl.progress.clone(),
-        ))?;
-
-        if cancelled {
-            info!("User cancelled the update! Exiting...");
-            std::process::exit(0);
-        }
-    }
-
-    Ok(())
 }
