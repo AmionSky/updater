@@ -29,9 +29,11 @@ gtk = { version = "0.9", features = ["v3_16"], optional = true }
 gio = { version = "0.9", features = ["v2_44"], optional = true }
 
 [features]
-default = []
+default = ["procedures"]
 window = ["gtk", "gio", "nwg"]
-extract = ["zip", "flate2", "tar"]
+extract = ["ext-zip", "ext-targz"]
+ext-zip = ["zip"]
+ext-targz = ["flate2", "tar"]
 procedures = []
 
 [profile.release]

@@ -1,6 +1,6 @@
 pub mod download;
 
-#[cfg(feature = "extract")]
+#[cfg(any(feature = "ext-zip", feature = "ext-targz"))]
 pub mod extract;
 
 mod procedure;

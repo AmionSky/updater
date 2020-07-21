@@ -1,11 +1,10 @@
 use super::Progress;
-use flate2::read::GzDecoder;
 use std::error::Error;
 use std::fs::File;
 use std::path::Path;
 use std::sync::Arc;
-use tar::Archive as TarArchive;
-use zip::ZipArchive;
+
+
 
 pub fn asset<P: AsRef<Path>>(
     name: &str,
@@ -13,20 +12,27 @@ pub fn asset<P: AsRef<Path>>(
     target: P,
     progress: Arc<Progress>,
 ) -> Result<(), Box<dyn Error>> {
+    #[cfg(feature = "ext-zip")]
     if name.ends_with(".zip") {
         return zip(archive, target, progress);
-    } else if name.ends_with(".tar.gz") {
+    }
+
+    #[cfg(feature = "ext-targz")]
+    if name.ends_with(".tar.gz") {
         return targz(archive, target, progress);
     }
 
     Err("Unknown archive format!".into())
 }
 
+#[cfg(feature = "ext-zip")]
 pub fn zip<P: AsRef<Path>>(
     zip: File,
     target: P,
     progress: Arc<Progress>,
 ) -> Result<(), Box<dyn Error>> {
+    use zip::ZipArchive;
+
     let mut archive = ZipArchive::new(zip)?;
     let mut size = 0;
 
@@ -74,11 +80,15 @@ pub fn zip<P: AsRef<Path>>(
     Ok(())
 }
 
+#[cfg(feature = "ext-targz")]
 pub fn targz<P: AsRef<Path>>(
     targz: File,
     target: P,
     progress: Arc<Progress>,
 ) -> Result<(), Box<dyn Error>> {
+    use flate2::read::GzDecoder;
+    use tar::Archive as TarArchive;
+
     let tar = GzDecoder::new(targz);
     let mut archive = TarArchive::new(tar);
 
