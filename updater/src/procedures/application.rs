@@ -102,7 +102,11 @@ impl UpdateStep<UpdateData> for StepDownload {
 
 pub struct StepInstall;
 impl UpdateStep<UpdateData> for StepInstall {
-    fn exec(&self, data: &mut UpdateData, _: &Arc<Progress>) -> Result<StepAction, Box<dyn Error>> {
+    fn exec(
+        &self,
+        data: &mut UpdateData,
+        progress: &Arc<Progress>,
+    ) -> Result<StepAction, Box<dyn Error>> {
         info!("Starting install");
 
         // (Re)Create install folder
@@ -119,6 +123,7 @@ impl UpdateStep<UpdateData> for StepInstall {
             data.asset.as_ref().unwrap().name(),
             data.file.take().unwrap(),
             &install_path,
+            progress.clone(),
         )?;
 
         Ok(StepAction::Continue)
