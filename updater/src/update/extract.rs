@@ -4,8 +4,6 @@ use std::fs::File;
 use std::path::Path;
 use std::sync::Arc;
 
-
-
 pub fn asset<P: AsRef<Path>>(
     name: &str,
     archive: File,
