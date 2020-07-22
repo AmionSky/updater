@@ -72,10 +72,10 @@ impl ProgressApp {
         if self.marquee.load(Ordering::Acquire) != indeterminate {
             self.marquee.store(indeterminate, Ordering::Release);
             if indeterminate {
-                self.progress_bar.add_style(nwg::ProgressBarFlags::MARQUEE);
+                self.progress_bar.add_flags(nwg::ProgressBarFlags::MARQUEE);
             } else {
                 self.progress_bar
-                    .remove_style(nwg::ProgressBarFlags::MARQUEE);
+                    .remove_flags(nwg::ProgressBarFlags::MARQUEE);
             }
         }
 
