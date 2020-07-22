@@ -74,6 +74,10 @@ impl ProgressApp {
     }
 
     fn pulse(state: &Rc<ProgressAppState>) -> Continue {
+        if state.wc.progress().complete() {
+            return Continue(false);
+        }
+
         if state.wc.progress().indeterminate() {
             state.progress_bar.pulse();
         }
