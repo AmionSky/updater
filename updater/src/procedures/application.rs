@@ -46,13 +46,12 @@ impl UpdateStep<UpdateData> for StepCheckVersion {
         data.provider.fetch()?;
 
         // Check version difference
-        let latest = data.provider.version()?;
-        if latest <= data.version {
+        data.latest = Some(data.provider.version()?);
+        if data.latest.as_ref().unwrap() <= &data.version {
             info!("{} is up-to-date", &data.app_name);
             return Ok(StepAction::Complete);
         }
 
-        data.latest = Some(latest);
         data.asset = Some(data.provider.find_asset(&data.asset_name)?);
 
         Ok(StepAction::Continue)

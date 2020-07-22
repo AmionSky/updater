@@ -22,6 +22,10 @@ pub fn application<P: AsRef<Path>>(
     let mut procedure = create(data);
     procedure.execute()?;
 
+    if procedure.progress().cancelled() {
+        return Err("Update cancelled!".into());
+    }
+
     Ok(procedure.data().latest.as_ref().unwrap().clone())
 }
 
