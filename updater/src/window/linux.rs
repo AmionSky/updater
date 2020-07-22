@@ -2,12 +2,37 @@ use gio::prelude::*;
 use gtk::prelude::*;
 
 use super::{percent_text, WindowConfig, UPDATE_INTERVAL};
+use lazy_static::lazy_static;
 use std::error::Error;
 use std::rc::Rc;
+use std::sync::mpsc::{channel, Sender};
+use std::sync::Mutex;
+use std::thread;
 
+// GTK can only be used from a single thread so we create a thread the first
+// time show is called and send the WindowConfig to it.
 pub fn show(wc: WindowConfig) -> Result<(), Box<dyn Error>> {
-    let app = ProgressApp::new(wc)?;
-    app.run();
+    lazy_static! {
+        static ref SENDER: Mutex<Option<Sender<WindowConfig>>> = Mutex::new(None);
+    }
+
+    let mut sender = SENDER.lock()?;
+
+    if sender.is_none() {
+        let (new_sender, receiver) = channel();
+
+        thread::spawn(move || loop {
+            let config = receiver.recv().unwrap();
+
+            let app = ProgressApp::new(config).unwrap();
+            app.run();
+        });
+
+        *sender = Some(new_sender);
+    }
+
+    sender.as_ref().unwrap().send(wc)?;
+
     Ok(())
 }
 
