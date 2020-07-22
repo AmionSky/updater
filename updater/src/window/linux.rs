@@ -16,7 +16,8 @@ pub fn show(wc: WindowConfig) -> Result<(), Box<dyn Error>> {
         static ref SENDER: Mutex<Option<Sender<WindowConfig>>> = Mutex::new(None);
     }
 
-    let mut sender = SENDER.lock()?;
+    // Specify type cause of rust-analyzer issue
+    let mut sender: std::sync::MutexGuard<Option<Sender<WindowConfig>>> = SENDER.lock()?;
 
     if sender.is_none() {
         let (new_sender, receiver) = channel();
@@ -63,11 +64,21 @@ impl ProgressApp {
     fn activate(s: Rc<ProgressAppState>) {
         let sc = s.clone();
         gtk::timeout_add(UPDATE_INTERVAL, move || Self::tick(&sc));
+        let sc = s.clone();
+        gtk::timeout_add(33, move || Self::pulse(&sc));
 
         let sc = s.clone();
         s.window.connect_delete_event(move |_, _| Self::close(&sc));
 
         s.window.show_all();
+    }
+
+    fn pulse(state: &Rc<ProgressAppState>) -> Continue {
+        if state.wc.progress().indeterminate() {
+            state.progress_bar.pulse();
+        }
+
+        Continue(true)
     }
 
     fn tick(state: &Rc<ProgressAppState>) -> Continue {
@@ -79,7 +90,6 @@ impl ProgressApp {
         state.action_label.set_text(&state.wc.label());
 
         if state.wc.progress().indeterminate() {
-            state.progress_bar.pulse();
             state.percent_label.set_text("");
         } else {
             let percent = state.wc.progress().percent();
