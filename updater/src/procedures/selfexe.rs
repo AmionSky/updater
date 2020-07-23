@@ -1,4 +1,4 @@
-use crate::provider::{Asset, Provider};
+use crate::provider::{Asset, DownloadResult, Provider};
 use crate::update::{StepAction, UpdateProcedure, UpdateStep};
 use crate::Progress;
 use log::{error, info};
@@ -102,12 +102,11 @@ impl UpdateStep<UpdateData> for StepDownload {
     ) -> Result<StepAction, Box<dyn Error>> {
         let thread = data.asset.as_ref().unwrap().download(progress.clone());
 
-        let file = if let Ok(Some(file)) = thread.join() {
-            file
-        } else if progress.cancelled() {
-            return Ok(StepAction::Cancel);
-        } else {
-            return Err("Asset download failed!".into());
+        let file = match thread.join() {
+            Ok(DownloadResult::Complete(file)) => file,
+            Ok(DownloadResult::Cancelled) => return Ok(StepAction::Cancel),
+            Ok(DownloadResult::Error) => return Err("Asset download failed!".into()),
+            Err(_) => return Err("Download thread failed!".into()),
         };
 
         data.file = Some(file);

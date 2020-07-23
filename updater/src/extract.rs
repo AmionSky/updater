@@ -4,12 +4,18 @@ use std::fs::File;
 use std::path::Path;
 use std::sync::Arc;
 
+#[derive(Debug, PartialEq)]
+pub enum ExtractResult {
+    Complete,
+    Cancelled,
+}
+
 pub fn asset<P: AsRef<Path>>(
     name: &str,
     archive: File,
     target: P,
     progress: Arc<Progress>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<ExtractResult, Box<dyn Error>> {
     #[cfg(feature = "ext-zip")]
     if name.ends_with(".zip") {
         return zip(archive, target, progress);
@@ -28,7 +34,7 @@ pub fn zip<P: AsRef<Path>>(
     zip: File,
     target: P,
     progress: Arc<Progress>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<ExtractResult, Box<dyn Error>> {
     use zip::ZipArchive;
 
     let mut archive = ZipArchive::new(zip)?;
@@ -43,7 +49,7 @@ pub fn zip<P: AsRef<Path>>(
 
     for i in 0..archive.len() {
         if progress.cancelled() {
-            return Err("Extract cancelled!".into());
+            return Ok(ExtractResult::Cancelled);
         }
 
         let mut zipped_item = archive.by_index(i)?;
@@ -75,7 +81,7 @@ pub fn zip<P: AsRef<Path>>(
         progress.add_current(zipped_item.size());
     }
 
-    Ok(())
+    Ok(ExtractResult::Complete)
 }
 
 #[cfg(feature = "ext-targz")]
@@ -83,7 +89,7 @@ pub fn targz<P: AsRef<Path>>(
     targz: File,
     target: P,
     progress: Arc<Progress>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<ExtractResult, Box<dyn Error>> {
     use flate2::read::GzDecoder;
     use tar::Archive as TarArchive;
 
@@ -92,11 +98,11 @@ pub fn targz<P: AsRef<Path>>(
 
     for entry in archive.entries()? {
         if progress.cancelled() {
-            return Err("Extract cancelled!".into());
+            return Ok(ExtractResult::Cancelled);
         }
 
         entry?.unpack_in(&target)?;
     }
 
-    Ok(())
+    Ok(ExtractResult::Complete)
 }

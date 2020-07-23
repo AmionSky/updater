@@ -43,12 +43,19 @@ pub trait Asset: Send {
     fn box_clone(&self) -> Box<dyn Asset>;
 
     /// Download the asset into a temprary file on a separate thread
-    fn download(&self, progress: Arc<Progress>) -> JoinHandle<Option<File>> {
+    fn download(&self, progress: Arc<Progress>) -> JoinHandle<DownloadResult> {
         download(self.box_clone(), progress)
     }
 }
 
-fn download(asset: Box<dyn Asset>, progress: Arc<Progress>) -> JoinHandle<Option<File>> {
+#[derive(Debug)]
+pub enum DownloadResult {
+    Complete(File),
+    Cancelled,
+    Error,
+}
+
+fn download(asset: Box<dyn Asset>, progress: Arc<Progress>) -> JoinHandle<DownloadResult> {
     use log::{error, info};
 
     std::thread::spawn(move || {
@@ -62,16 +69,19 @@ fn download(asset: Box<dyn Asset>, progress: Arc<Progress>) -> JoinHandle<Option
         progress.set_indeterminate(false);
 
         match download_inner(asset, progress) {
-            Ok(file) => Some(file),
+            Ok(result) => result,
             Err(e) => {
                 error!("{}", e);
-                None
+                DownloadResult::Error
             }
         }
     })
 }
 
-fn download_inner(asset: Box<dyn Asset>, progress: Arc<Progress>) -> Result<File, Box<dyn Error>> {
+fn download_inner(
+    asset: Box<dyn Asset>,
+    progress: Arc<Progress>,
+) -> Result<DownloadResult, Box<dyn Error>> {
     use std::io::{ErrorKind, Read, Seek, SeekFrom, Write};
 
     let resp = ureq::get(asset.url()).call();
@@ -86,7 +96,7 @@ fn download_inner(asset: Box<dyn Asset>, progress: Arc<Progress>) -> Result<File
     let mut buf: [u8; BUF_SIZE] = [0; BUF_SIZE];
     loop {
         if progress.cancelled() {
-            return Err("Download cancelled!".into());
+            return Ok(DownloadResult::Cancelled);
         }
 
         let len = match reader.read(&mut buf) {
@@ -102,5 +112,5 @@ fn download_inner(asset: Box<dyn Asset>, progress: Arc<Progress>) -> Result<File
 
     out.flush()?;
     out.seek(SeekFrom::Start(0))?;
-    Ok(out)
+    Ok(DownloadResult::Complete(out))
 }

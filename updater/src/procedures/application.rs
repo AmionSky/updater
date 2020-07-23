@@ -1,4 +1,5 @@
-use crate::provider::{Asset, Provider};
+use crate::extract::ExtractResult;
+use crate::provider::{Asset, DownloadResult, Provider};
 use crate::update::{StepAction, UpdateProcedure, UpdateStep};
 use crate::{extract, Progress};
 use log::info;
@@ -77,12 +78,12 @@ impl UpdateStep<UpdateData> for StepDownload {
         );
 
         let thread = data.asset.as_ref().unwrap().download(progress.clone());
-        let file = if let Ok(Some(file)) = thread.join() {
-            file
-        } else if progress.cancelled() {
-            return Ok(StepAction::Cancel);
-        } else {
-            return Err("Asset download failed!".into());
+
+        let file = match thread.join() {
+            Ok(DownloadResult::Complete(file)) => file,
+            Ok(DownloadResult::Cancelled) => return Ok(StepAction::Cancel),
+            Ok(DownloadResult::Error) => return Err("Asset download failed!".into()),
+            Err(_) => return Err("Download thread failed!".into()),
         };
 
         data.file = Some(file);
@@ -118,12 +119,15 @@ impl UpdateStep<UpdateData> for StepInstall {
         std::fs::create_dir(&install_path)?;
 
         // Unpack asset
-        extract::asset(
+        if extract::asset(
             data.asset.as_ref().unwrap().name(),
             data.file.take().unwrap(),
             &install_path,
             progress.clone(),
-        )?;
+        )? == ExtractResult::Cancelled
+        {
+            return Ok(StepAction::Cancel);
+        }
 
         Ok(StepAction::Continue)
     }
