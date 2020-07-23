@@ -49,11 +49,7 @@ impl Win32ProgressWindow {
     }
 
     fn send(&self, action: CommType) {
-        if self
-            .sender
-            .send(action)
-            .is_err()
-        {
+        if self.sender.send(action).is_err() {
             error!("Win32ProgressWindow: sender error");
         }
     }

@@ -13,7 +13,7 @@ const UPDATE_INTERVAL: u32 = 100;
 
 pub fn create(config: WindowConfig) -> Result<Box<dyn ProgressWindow>, Box<dyn Error>> {
     #[cfg(target_os = "linux")]
-    todo!();
+    let window = linux::GtkProgressWindow::new(config)?;
 
     #[cfg(target_os = "windows")]
     let window = windows::Win32ProgressWindow::new(config);
