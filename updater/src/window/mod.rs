@@ -1,6 +1,6 @@
-mod wc;
+mod config;
 
-pub use wc::WindowConfig;
+pub use config::WindowConfig;
 
 use std::error::Error;
 
@@ -11,15 +11,25 @@ mod windows;
 
 const UPDATE_INTERVAL: u32 = 100;
 
-/// Show the progress window.
-/// Returns true if the user closed the window.
-pub fn show(wc: WindowConfig) -> Result<(), Box<dyn Error>> {
+pub fn create(config: WindowConfig) -> Result<Box<dyn ProgressWindow>, Box<dyn Error>> {
     #[cfg(target_os = "linux")]
-    linux::show(wc)?;
-    #[cfg(target_os = "windows")]
-    windows::show(wc)?;
+    let window = linux::GtkProgressWindow::new(config)?;
 
-    Ok(())
+    #[cfg(target_os = "windows")]
+    let window = windows::Win32ProgressWindow::new(config);
+
+    Ok(Box::new(window))
+}
+
+pub trait ProgressWindow {
+    /// Sets the progress window's title
+    fn set_title(&self, text: String);
+
+    /// Sets the progress window's label text
+    fn set_label(&self, text: String);
+
+    /// Closes the progress window
+    fn close(&self);
 }
 
 fn percent_text(percent: f64) -> String {

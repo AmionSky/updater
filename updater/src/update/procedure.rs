@@ -1,8 +1,7 @@
 use super::{Progress, StepAction, UpdateStep};
 use log::info;
 use std::error::Error;
-use std::sync::{Arc, RwLock};
-use std::thread::JoinHandle;
+use std::sync::Arc;
 
 pub struct UpdateProcedure<T> {
     title: String,
@@ -43,16 +42,13 @@ impl<T> UpdateProcedure<T> {
 
     pub fn execute(&mut self) -> Result<(), Box<dyn Error>> {
         #[cfg(feature = "window")]
-        let (handle, label) = self.open_window();
+        let window = self.open_window()?;
 
         for step in &self.steps {
             self.progress.reset();
 
             #[cfg(feature = "window")]
-            {
-                let mut wl = label.write().unwrap();
-                *wl = step.label(&self.data).to_string();
-            }
+            window.set_label(step.label(&self.data));
 
             match step.exec(&mut self.data, &self.progress)? {
                 StepAction::Cancel => break,
@@ -76,23 +72,20 @@ impl<T> UpdateProcedure<T> {
             info!("Update successful!");
         }
 
-        #[cfg(feature = "window")]
-        handle.join().unwrap();
-
         Ok(())
     }
 
     #[cfg(feature = "window")]
-    fn open_window(&self) -> (JoinHandle<()>, Arc<RwLock<String>>) {
+    fn open_window(&self) -> Result<Box<dyn crate::window::ProgressWindow>, Box<dyn Error>> {
         use crate::window::{self, WindowConfig};
-        let label = Arc::new(RwLock::new(String::from("Initializing...")));
-        let config = WindowConfig::new(self.title.clone(), label.clone(), self.progress.clone());
 
-        let handle = std::thread::spawn(|| {
-            // TODO: Better error handling?
-            window::show(config).unwrap();
-        });
+        let config = WindowConfig::new(
+            self.title.clone(),
+            "Initializing...".to_string(),
+            self.progress.clone(),
+        );
+        let window = window::create(config)?;
 
-        (handle, label)
+        Ok(window)
     }
 }

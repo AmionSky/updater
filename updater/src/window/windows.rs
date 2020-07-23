@@ -1,32 +1,78 @@
-use super::{percent_text, WindowConfig, UPDATE_INTERVAL};
+use super::{percent_text, ProgressWindow, WindowConfig, UPDATE_INTERVAL};
+use crate::update::Progress;
 use log::error;
 use nwg::NativeUi;
-use std::error::Error;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::Arc;
 
-pub fn show(wc: WindowConfig) -> Result<(), Box<dyn Error>> {
-    if let Err(e) = nwg::init() {
-        error!("Failed to init Native Windows GUI");
-        return Err(e.into());
+type CommType = Box<dyn Fn(&ProgressApp) + Send + 'static>;
+
+pub struct Win32ProgressWindow {
+    sender: Sender<CommType>,
+}
+
+impl Win32ProgressWindow {
+    pub fn new(config: WindowConfig) -> Self {
+        let (sender, receiver) = channel();
+        let window = Self { sender };
+
+        window.set_title(config.title);
+        window.set_label(config.label);
+
+        let progress = config.progress;
+        let _ = std::thread::spawn(|| {
+            if let Err(e) = nwg::init() {
+                error!("Failed to init Native Windows GUI: {}", e);
+                return;
+            }
+
+            if let Err(e) = nwg::Font::set_global_family("Segoe UI") {
+                error!("Failed to set default font: {}", e);
+                return;
+            }
+
+            let state = ProgressApp::new(receiver, progress);
+
+            let _ui = match ProgressApp::build_ui(state) {
+                Ok(ui) => ui,
+                Err(e) => {
+                    error!("Failed to build UI: {}", e);
+                    return;
+                }
+            };
+
+            nwg::dispatch_thread_events();
+        });
+
+        window
     }
 
-    if let Err(e) = nwg::Font::set_global_family("Segoe UI") {
-        error!("Failed to set default font");
-        return Err(e.into());
-    }
-
-    let ui = match ProgressApp::build_ui(ProgressApp::new(wc)) {
-        Ok(ui) => ui,
-        Err(e) => {
-            error!("Failed to build UI");
-            return Err(e.into());
+    fn send(&self, action: CommType) {
+        if self.sender.send(action).is_err() {
+            error!("Win32ProgressWindow: sender error");
         }
-    };
+    }
+}
 
-    nwg::dispatch_thread_events();
-    ui.destroy();
+impl ProgressWindow for Win32ProgressWindow {
+    fn set_title(&self, text: String) {
+        self.send(Box::new(move |app| {
+            app.window.set_text(&text);
+        }));
+    }
 
-    Ok(())
+    fn set_label(&self, text: String) {
+        self.send(Box::new(move |app| {
+            app.action_label.set_text(&text);
+        }));
+    }
+
+    fn close(&self) {
+        self.send(Box::new(move |_| {
+            nwg::stop_thread_dispatch();
+        }));
+    }
 }
 
 fn calc_step(percent: f64) -> u32 {
@@ -34,7 +80,8 @@ fn calc_step(percent: f64) -> u32 {
 }
 
 pub struct ProgressApp {
-    pub wc: WindowConfig,
+    receiver: Receiver<CommType>,
+    progress: Arc<Progress>,
 
     font: nwg::Font,
     window: nwg::Window,
@@ -46,9 +93,10 @@ pub struct ProgressApp {
 }
 
 impl ProgressApp {
-    pub fn new(wc: WindowConfig) -> Self {
+    pub fn new(receiver: Receiver<CommType>, progress: Arc<Progress>) -> Self {
         ProgressApp {
-            wc,
+            receiver,
+            progress,
             font: nwg::Font::default(),
             window: nwg::Window::default(),
             action_label: nwg::Label::default(),
@@ -60,13 +108,16 @@ impl ProgressApp {
     }
 
     fn timer_tick(&self) {
-        if self.wc.progress().complete() {
+        if self.progress.complete() {
             nwg::stop_thread_dispatch();
             return;
         }
 
-        let indeterminate = self.wc.progress().indeterminate();
-        self.action_label.set_text(&self.wc.label());
+        for func in self.receiver.try_iter() {
+            func(&self);
+        }
+
+        let indeterminate = self.progress.indeterminate();
 
         // Turn marquee on/off
         if self.marquee.load(Ordering::Acquire) != indeterminate {
@@ -82,14 +133,14 @@ impl ProgressApp {
         if indeterminate {
             self.progress_label.set_text("");
         } else {
-            let percent = self.wc.progress().percent();
+            let percent = self.progress.percent();
             self.progress_label.set_text(&percent_text(percent));
             self.progress_bar.set_pos(calc_step(percent));
         }
     }
 
     fn user_exit(&self) {
-        self.wc.progress().set_cancelled(true);
+        self.progress.set_cancelled(true);
         nwg::stop_thread_dispatch();
     }
 }
@@ -108,8 +159,8 @@ mod basic_app_ui {
     impl nwg::NativeUi<ProgressAppUi> for ProgressApp {
         fn build_ui(mut data: Self) -> Result<ProgressAppUi, nwg::NwgError> {
             // Vals
-            let percent = data.wc.progress().percent();
-            let indeterminate = data.wc.progress().indeterminate();
+            let percent = data.progress.percent();
+            let indeterminate = data.progress.indeterminate();
 
             data.marquee.store(indeterminate, Ordering::Release);
             let pb_flags = if indeterminate {
@@ -129,13 +180,11 @@ mod basic_app_ui {
                 .flags(nwg::WindowFlags::WINDOW | nwg::WindowFlags::VISIBLE)
                 .size((360, 63))
                 .position((300, 300))
-                .title(&data.wc.title())
                 .build(&mut data.window)?;
 
             nwg::Label::builder()
                 .size((290, 16))
                 .position((10, 10))
-                .text(&data.wc.label())
                 .font(Some(&data.font))
                 .parent(&data.window)
                 .build(&mut data.action_label)?;
@@ -164,6 +213,10 @@ mod basic_app_ui {
                 .stopped(false)
                 .parent(&data.window)
                 .build(&mut data.timer)?;
+
+            for func in data.receiver.try_iter() {
+                func(&data);
+            }
 
             // Wrap-up
             let ui = ProgressAppUi {
@@ -200,9 +253,9 @@ mod basic_app_ui {
         }
     }
 
-    impl ProgressAppUi {
+    impl Drop for ProgressAppUi {
         /// To make sure that everything is freed without issues, the default handler must be unbound.
-        pub fn destroy(&self) {
+        fn drop(&mut self) {
             let handler = self.default_handler.borrow();
             if handler.is_some() {
                 nwg::unbind_event_handler(handler.as_ref().unwrap());
