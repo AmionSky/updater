@@ -1,5 +1,6 @@
 use crate::provider::{Asset, Provider};
-use crate::update::{download, Progress, StepAction, UpdateProcedure, UpdateStep};
+use crate::update::{StepAction, UpdateProcedure, UpdateStep};
+use crate::Progress;
 use log::{error, info};
 use semver::Version;
 use std::error::Error;
@@ -99,7 +100,7 @@ impl UpdateStep<UpdateData> for StepDownload {
         data: &mut UpdateData,
         progress: &Arc<Progress>,
     ) -> Result<StepAction, Box<dyn Error>> {
-        let thread = download::asset(data.asset.as_ref().unwrap().box_clone(), progress.clone());
+        let thread = data.asset.as_ref().unwrap().download(progress.clone());
 
         let file = if let Ok(Some(file)) = thread.join() {
             file

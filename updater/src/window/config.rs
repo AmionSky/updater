@@ -1,4 +1,4 @@
-use crate::update::Progress;
+use crate::Progress;
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]

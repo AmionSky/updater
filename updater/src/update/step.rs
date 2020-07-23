@@ -1,4 +1,4 @@
-use super::Progress;
+use crate::Progress;
 use std::error::Error;
 use std::sync::Arc;
 

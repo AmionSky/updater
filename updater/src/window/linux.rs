@@ -1,5 +1,5 @@
 use super::{percent_text, ProgressWindow, WindowConfig, UPDATE_INTERVAL};
-use crate::update::Progress;
+use crate::Progress;
 use gio::prelude::*;
 use gtk::prelude::*;
 use lazy_static::lazy_static;

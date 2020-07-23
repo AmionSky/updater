@@ -1,5 +1,5 @@
 use super::{percent_text, ProgressWindow, WindowConfig, UPDATE_INTERVAL};
-use crate::update::Progress;
+use crate::Progress;
 use log::error;
 use nwg::NativeUi;
 use std::sync::atomic::{AtomicBool, Ordering};

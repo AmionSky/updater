@@ -1,4 +1,5 @@
-use super::{Progress, StepAction, UpdateStep};
+use super::{StepAction, UpdateStep};
+use crate::Progress;
 use log::info;
 use std::error::Error;
 use std::sync::Arc;
