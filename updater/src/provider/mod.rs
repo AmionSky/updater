@@ -7,7 +7,13 @@ use semver::Version;
 use std::error::Error;
 use std::fs::File;
 use std::sync::Arc;
-use std::thread::JoinHandle;
+
+#[derive(Debug)]
+pub enum DownloadResult {
+    Complete(File),
+    Cancelled,
+    Error(Box<dyn Error>),
+}
 
 pub trait Provider {
     /// Gets the name of the provider.
@@ -43,74 +49,61 @@ pub trait Asset: Send {
     fn box_clone(&self) -> Box<dyn Asset>;
 
     /// Download the asset into a temprary file on a separate thread
-    fn download(&self, progress: Arc<Progress>) -> JoinHandle<DownloadResult> {
-        download(self.box_clone(), progress)
-    }
-}
+    fn download(&self, progress: Arc<Progress>) -> DownloadResult {
+        use std::io::{ErrorKind, Read, Seek, SeekFrom, Write};
 
-#[derive(Debug)]
-pub enum DownloadResult {
-    Complete(File),
-    Cancelled,
-    Error,
-}
-
-fn download(asset: Box<dyn Asset>, progress: Arc<Progress>) -> JoinHandle<DownloadResult> {
-    use log::{error, info};
-
-    std::thread::spawn(move || {
-        info!(
+        log::info!(
             "Downloading {} - {:.2}MB",
-            asset.name(),
-            asset.size() as f64 / 1_000_000.0
+            self.name(),
+            self.size() as f64 / 1_000_000.0
         );
 
-        progress.set_maximum(asset.size());
+        // Setup progress
+        progress.set_maximum(self.size());
         progress.set_indeterminate(false);
 
-        match download_inner(asset, progress) {
-            Ok(result) => result,
-            Err(e) => {
-                error!("{}", e);
-                DownloadResult::Error
-            }
-        }
-    })
-}
-
-fn download_inner(
-    asset: Box<dyn Asset>,
-    progress: Arc<Progress>,
-) -> Result<DownloadResult, Box<dyn Error>> {
-    use std::io::{ErrorKind, Read, Seek, SeekFrom, Write};
-
-    let resp = ureq::get(asset.url()).call();
-    if !resp.ok() {
-        return Err("Response not OK".into());
-    }
-
-    let mut reader = resp.into_reader();
-    let mut out = tempfile::tempfile()?;
-
-    const BUF_SIZE: usize = 4096;
-    let mut buf: [u8; BUF_SIZE] = [0; BUF_SIZE];
-    loop {
-        if progress.cancelled() {
-            return Ok(DownloadResult::Cancelled);
+        // Send request message
+        let resp = ureq::get(self.url()).call();
+        if !resp.ok() {
+            return DownloadResult::Error("Response not OK".into());
         }
 
-        let len = match reader.read(&mut buf) {
-            Ok(0) => break,
-            Ok(len) => len,
-            Err(ref e) if e.kind() == ErrorKind::Interrupted => continue,
-            Err(e) => return Err(e.into()),
+        // Init reader and temp file
+        let mut reader = resp.into_reader();
+        let mut out = match tempfile::tempfile() {
+            Ok(file) => file,
+            Err(e) => return DownloadResult::Error(e.into()),
         };
 
-        out.write_all(&buf[..len])?;
-        progress.add_current(len as u64);
-    }
+        // Copy received data into temo file
+        const BUF_SIZE: usize = 4096;
+        let mut buf: [u8; BUF_SIZE] = [0; BUF_SIZE];
+        loop {
+            if progress.cancelled() {
+                return DownloadResult::Cancelled;
+            }
 
-    out.flush()?;
-    out.seek(SeekFrom::Start(0))?;
-    Ok(DownloadResult::Complete(out))
+            let len = match reader.read(&mut buf) {
+                Ok(0) => break,
+                Ok(len) => len,
+                Err(ref e) if e.kind() == ErrorKind::Interrupted => continue,
+                Err(e) => return DownloadResult::Error(e.into()),
+            };
+
+            if let Err(e) = out.write_all(&buf[..len]) {
+                return DownloadResult::Error(e.into());
+            };
+            progress.add_current(len as u64);
+        }
+
+        // Flush and reset temp file
+        if let Err(e) = out.flush() {
+            return DownloadResult::Error(e.into());
+        };
+        if let Err(e) = out.seek(SeekFrom::Start(0)) {
+            return DownloadResult::Error(e.into());
+        };
+
+        DownloadResult::Complete(out)
+    }
 }

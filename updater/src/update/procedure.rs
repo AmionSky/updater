@@ -85,8 +85,7 @@ impl<T> UpdateProcedure<T> {
             "Initializing...".to_string(),
             self.progress.clone(),
         );
-        let window = window::create(config)?;
 
-        Ok(window)
+        window::create(config)
     }
 }

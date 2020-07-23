@@ -77,13 +77,12 @@ impl UpdateStep<UpdateData> for StepDownload {
             data.latest.as_ref().unwrap()
         );
 
-        let thread = data.asset.as_ref().unwrap().download(progress.clone());
+        let dl_result = data.asset.as_ref().unwrap().download(progress.clone());
 
-        let file = match thread.join() {
-            Ok(DownloadResult::Complete(file)) => file,
-            Ok(DownloadResult::Cancelled) => return Ok(StepAction::Cancel),
-            Ok(DownloadResult::Error) => return Err("Asset download failed!".into()),
-            Err(_) => return Err("Download thread failed!".into()),
+        let file = match dl_result {
+            DownloadResult::Complete(file) => file,
+            DownloadResult::Cancelled => return Ok(StepAction::Cancel),
+            DownloadResult::Error(e) => return Err(format!("Asset download failed: {}", e).into()),
         };
 
         data.file = Some(file);
