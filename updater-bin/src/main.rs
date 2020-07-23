@@ -2,21 +2,16 @@
 
 mod config;
 mod launcher;
-mod locker;
 mod platform;
-mod provider;
 mod update;
 mod version;
 
-#[cfg(feature = "window")]
-mod window;
-
 use config::{Config, Verifiable};
-use locker::Locker;
 use log::{error, info, warn};
 use semver::Version;
 use std::error::Error;
 use std::path::PathBuf;
+use updater::Locker;
 
 fn main() {
     #[cfg(target_os = "windows")]
@@ -75,7 +70,7 @@ fn start(cfg: &Config) {
 
     // Update self
     if cfg.update.update_self {
-        if let Err(err) = update::self_exe(&working_dir) {
+        if let Err(err) = update::self_exe() {
             error!("Failed to update self: {}", err);
         }
     }

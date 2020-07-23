@@ -1,47 +1,6 @@
-[package]
-name = "updater"
-version = "0.2.0"
-authors = ["Csányi István <icsanyi96@gmail.com>"]
-edition = "2018"
-publish = false
-repository = "https://github.com/AmionSky/updater"
-license = "MIT"
+[workspace]
 
-[dependencies]
-serde = { version = "1", features = ["derive"] }
-json = { package = "serde_json", version = "1" }
-simplelog  = "0.8"
-toml = "0.5"
-log = "0.4"
-fs2 = "0.4"
-semver = "0.10"
-ureq = "1"
-regex = "1"
-lazy_static = "1"
-tempfile = "3"
-zip = "0.5"
-flate2 = "1"
-tar = "0.4"
-
-[target.'cfg(target_os="windows")'.dependencies]
-winapi = { version = "0.3", features = ["wincon"] }
-nwg = { package = "native-windows-gui", git = "https://github.com/gabdube/native-windows-gui", branch = "1.0-prerelease", features = ["progress-bar","timer"], optional = true }
-
-[target.'cfg(target_os="linux")'.dependencies]
-gtk = { version = "0.9", features = ["v3_16"], optional = true }
-gio = { version = "0.9", features = ["v2_44"], optional = true }
-
-[features]
-default = ["window"]
-window = ["gtk", "gio", "nwg"]
-
-[profile.release]
-opt-level = 3
-debug = false
-rpath = false
-lto = true
-debug-assertions = false
-codegen-units = 1
-panic = 'abort'
-incremental = false
-overflow-checks = false
+members = [
+    "updater",
+    "updater-bin",
+]

@@ -1,10 +1,6 @@
 use lazy_static::lazy_static;
 use regex::Regex;
-use semver::Version;
 use std::error::Error;
-use std::path::{Path, PathBuf};
-
-pub const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// Extracts only the semver from a string
 pub fn extract(version: &str) -> Result<String, Box<dyn Error>> {
@@ -15,28 +11,11 @@ pub fn extract(version: &str) -> Result<String, Box<dyn Error>> {
     Ok(version[mat.start()..mat.end()].into())
 }
 
-pub fn app_file<P: AsRef<Path>>(wd: P) -> PathBuf {
-    wd.as_ref().join("version.txt")
-}
-
-pub fn read_file<P: AsRef<Path>>(version_file: P) -> Option<Version> {
-    if version_file.as_ref().exists() {
-        let text = std::fs::read_to_string(version_file).ok()?;
-        Some(Version::parse(&text).ok()?)
-    } else {
-        None
-    }
-}
-
-pub fn write_file<P: AsRef<Path>>(file: P, version: &Version) -> Result<(), Box<dyn Error>> {
-    std::fs::write(file, version.to_string())?;
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use log::error;
+    use semver::Version;
 
     macro_rules! parse_or_return {
         ($var:expr) => {

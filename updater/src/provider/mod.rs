@@ -10,7 +10,6 @@ pub trait Provider {
     fn name(&self) -> &'static str;
 
     /// Fetches all necessary data for the provider.
-    /// Will probably require blocking network operations.
     fn fetch(&mut self) -> Result<(), Box<dyn Error>>;
 
     /// Returns the latest version available by the provider.
