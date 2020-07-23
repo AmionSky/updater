@@ -9,9 +9,6 @@ mod linux;
 #[cfg(target_os = "windows")]
 mod windows;
 
-#[cfg(target_os = "windows")]
-pub use windows::Win32ProgressWindow;
-
 const UPDATE_INTERVAL: u32 = 100;
 
 pub fn create(config: WindowConfig) -> Result<Box<dyn ProgressWindow>, Box<dyn Error>> {
@@ -19,14 +16,20 @@ pub fn create(config: WindowConfig) -> Result<Box<dyn ProgressWindow>, Box<dyn E
     todo!();
 
     #[cfg(target_os = "windows")]
-    let window = Win32ProgressWindow::new(config);
+    let window = windows::Win32ProgressWindow::new(config);
 
     Ok(Box::new(window))
 }
 
 pub trait ProgressWindow {
-    fn set_label(&mut self, text: String);
-    fn close(&mut self);
+    /// Sets the progress window's title
+    fn set_title(&self, text: String);
+
+    /// Sets the progress window's label text
+    fn set_label(&self, text: String);
+
+    /// Closes the progress window
+    fn close(&self);
 }
 
 fn percent_text(percent: f64) -> String {

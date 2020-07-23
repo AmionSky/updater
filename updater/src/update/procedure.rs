@@ -42,7 +42,7 @@ impl<T> UpdateProcedure<T> {
 
     pub fn execute(&mut self) -> Result<(), Box<dyn Error>> {
         #[cfg(feature = "window")]
-        let mut window = self.open_window()?;
+        let window = self.open_window()?;
 
         for step in &self.steps {
             self.progress.reset();

@@ -5,21 +5,23 @@ use nwg::NativeUi;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::Arc;
-use std::thread::JoinHandle;
 
 type CommType = Box<dyn Fn(&ProgressApp) + Send + 'static>;
 
 pub struct Win32ProgressWindow {
     sender: Sender<CommType>,
-    handle: JoinHandle<()>,
 }
 
 impl Win32ProgressWindow {
     pub fn new(config: WindowConfig) -> Self {
         let (sender, receiver) = channel();
-        let progress = config.take_progress();
+        let window = Self { sender };
 
-        let handle = std::thread::spawn(|| {
+        window.set_title(config.title);
+        window.set_label(config.label);
+
+        let progress = config.progress;
+        let _ = std::thread::spawn(|| {
             if let Err(e) = nwg::init() {
                 error!("Failed to init Native Windows GUI: {}", e);
                 return;
@@ -30,10 +32,9 @@ impl Win32ProgressWindow {
                 return;
             }
 
-            let app = ProgressApp::new(receiver, progress);
+            let state = ProgressApp::new(receiver, progress);
 
-            #[allow(unused_variables)]
-            let ui = match ProgressApp::build_ui(app) {
+            let _ui = match ProgressApp::build_ui(state) {
                 Ok(ui) => ui,
                 Err(e) => {
                     error!("Failed to build UI: {}", e);
@@ -44,41 +45,37 @@ impl Win32ProgressWindow {
             nwg::dispatch_thread_events();
         });
 
-        Self { sender, handle }
+        window
     }
 
-    pub fn sender(&self) -> &Sender<CommType> {
-        &self.sender
-    }
-
-    pub fn handle(&self) -> &JoinHandle<()> {
-        &self.handle
+    fn send(&self, action: CommType) {
+        if self
+            .sender
+            .send(action)
+            .is_err()
+        {
+            error!("Win32ProgressWindow: sender error");
+        }
     }
 }
 
 impl ProgressWindow for Win32ProgressWindow {
-    fn set_label(&mut self, text: String) {
-        if self
-            .sender
-            .send(Box::new(move |app| {
-                app.action_label.set_text(&text);
-            }))
-            .is_err()
-        {
-            error!("Win32ProgressWindow: sender error");
-        }
+    fn set_title(&self, text: String) {
+        self.send(Box::new(move |app| {
+            app.window.set_text(&text);
+        }));
     }
 
-    fn close(&mut self) {
-        if self
-            .sender
-            .send(Box::new(|_| {
-                nwg::stop_thread_dispatch();
-            }))
-            .is_err()
-        {
-            error!("Win32ProgressWindow: sender error");
-        }
+    fn set_label(&self, text: String) {
+        self.send(Box::new(move |app| {
+            app.action_label.set_text(&text);
+        }));
+    }
+
+    fn close(&self) {
+        self.send(Box::new(move |_| {
+            nwg::stop_thread_dispatch();
+        }));
     }
 }
 

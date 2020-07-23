@@ -3,9 +3,9 @@ use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct WindowConfig {
-    title: String,
-    label: String,
-    progress: Arc<Progress>,
+    pub title: String,
+    pub label: String,
+    pub progress: Arc<Progress>,
 }
 
 impl WindowConfig {
@@ -15,22 +15,6 @@ impl WindowConfig {
             label,
             progress,
         }
-    }
-
-    pub fn title(&self) -> &str {
-        &self.title
-    }
-
-    pub fn label(&self) -> &str {
-        &self.label
-    }
-
-    pub fn progress(&self) -> &Arc<Progress> {
-        &self.progress
-    }
-
-    pub fn take_progress(self) -> Arc<Progress> {
-        self.progress
     }
 }
 
