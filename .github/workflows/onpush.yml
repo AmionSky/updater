@@ -1,8 +1,6 @@
 name: Run tests
 
 on:
-  # Trigger the workflow on push or pull request,
-  # but only for the master branch
   push:
     branches:
       - master
@@ -15,8 +13,6 @@ jobs:
     name: Test commit
     runs-on: windows-latest
     steps:
-      - name: Install dependencies
-        run: sudo apt-get install libgtk-3-dev
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Run tests
