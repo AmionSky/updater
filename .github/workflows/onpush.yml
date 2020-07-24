@@ -13,7 +13,7 @@ on:
 jobs:
   build:
     name: Test commit
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Install dependencies
         run: sudo apt-get install libgtk-3-dev
