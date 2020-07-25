@@ -82,8 +82,6 @@ impl Progress {
     pub fn percent(&self) -> f64 {
         if self.complete() {
             1.0
-        } else if self.indeterminate() {
-            0.0
         } else {
             let current = self.current();
             let maximum = self.maximum();
@@ -100,5 +98,69 @@ impl Progress {
 impl Default for Progress {
     fn default() -> Self {
         Self::new(true, false, false, 0, 0)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_indeterminate() {
+        let progress = Progress::default();
+        progress.set_indeterminate(true);
+        assert!(progress.indeterminate());
+    }
+
+    #[test]
+    fn test_complete() {
+        let progress = Progress::default();
+        progress.set_complete(true);
+        assert!(progress.complete());
+    }
+
+    #[test]
+    fn test_cancelled() {
+        let progress = Progress::default();
+        progress.set_cancelled(true);
+        assert!(progress.cancelled());
+    }
+
+    #[test]
+    fn test_set_current() {
+        let progress = Progress::default();
+        progress.set_current(50);
+        assert_eq!(progress.current(), 50);
+    }
+
+    #[test]
+    fn test_add_current() {
+        let progress = Progress::default();
+        progress.set_current(10);
+        progress.add_current(10);
+        assert_eq!(progress.current(), 20);
+    }
+
+    #[test]
+    fn test_set_maximum() {
+        let progress = Progress::default();
+        progress.set_maximum(50);
+        assert_eq!(progress.maximum(), 50);
+    }
+
+    #[test]
+    fn test_add_maximum() {
+        let progress = Progress::default();
+        progress.set_maximum(10);
+        progress.add_maximum(10);
+        assert_eq!(progress.maximum(), 20);
+    }
+
+    #[test]
+    fn test_percent() {
+        let progress = Progress::default();
+        progress.set_maximum(100);
+        progress.set_current(50);
+        assert_eq!(progress.percent(), 0.5);
     }
 }
