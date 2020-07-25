@@ -89,3 +89,86 @@ impl<T> UpdateProcedure<T> {
         window::create(config)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct TestData;
+
+    struct TestStepContinue;
+    impl UpdateStep<TestData> for TestStepContinue {
+        fn exec(&self, _: &mut TestData, _: &Arc<Progress>) -> Result<StepAction, Box<dyn Error>> {
+            Ok(StepAction::Continue)
+        }
+        fn label(&self, _: &TestData) -> String {
+            "Test Continue Step".to_string()
+        }
+    }
+
+    struct TestStepComplete;
+    impl UpdateStep<TestData> for TestStepComplete {
+        fn exec(&self, _: &mut TestData, _: &Arc<Progress>) -> Result<StepAction, Box<dyn Error>> {
+            Ok(StepAction::Complete)
+        }
+        fn label(&self, _: &TestData) -> String {
+            "Test Complete Step".to_string()
+        }
+    }
+
+    struct TestStepCancel;
+    impl UpdateStep<TestData> for TestStepCancel {
+        fn exec(&self, _: &mut TestData, _: &Arc<Progress>) -> Result<StepAction, Box<dyn Error>> {
+            Ok(StepAction::Cancel)
+        }
+        fn label(&self, _: &TestData) -> String {
+            "Test Cancel Step".to_string()
+        }
+    }
+
+    struct TestStepError;
+    impl UpdateStep<TestData> for TestStepError {
+        fn exec(&self, _: &mut TestData, _: &Arc<Progress>) -> Result<StepAction, Box<dyn Error>> {
+            Err("Test Error".into())
+        }
+        fn label(&self, _: &TestData) -> String {
+            "Test Error Step".to_string()
+        }
+    }
+
+    #[test]
+    fn test_procedure_ok() {
+        let mut procedure = UpdateProcedure::new("Procedure Ok".to_string(), TestData);
+        procedure.add_step(Box::new(TestStepContinue));
+        procedure.add_step(Box::new(TestStepContinue));
+        procedure.add_step(Box::new(TestStepContinue));
+        assert!(procedure.execute().is_ok());
+    }
+
+    #[test]
+    fn test_procedure_cancelled() {
+        let mut procedure = UpdateProcedure::new("Procedure Cancelled".to_string(), TestData);
+        procedure.add_step(Box::new(TestStepContinue));
+        procedure.add_step(Box::new(TestStepCancel));
+        procedure.add_step(Box::new(TestStepContinue));
+        assert!(procedure.execute().is_ok());
+    }
+
+    #[test]
+    fn test_procedure_err() {
+        let mut procedure = UpdateProcedure::new("Procedure Error".to_string(), TestData);
+        procedure.add_step(Box::new(TestStepContinue));
+        procedure.add_step(Box::new(TestStepError));
+        procedure.add_step(Box::new(TestStepContinue));
+        assert!(procedure.execute().is_err());
+    }
+
+    #[test]
+    fn test_procedure_early_complete() {
+        let mut procedure = UpdateProcedure::new("Procedure Early Complete".to_string(), TestData);
+        procedure.add_step(Box::new(TestStepContinue));
+        procedure.add_step(Box::new(TestStepComplete));
+        procedure.add_step(Box::new(TestStepError));
+        assert!(procedure.execute().is_ok());
+    }
+}
