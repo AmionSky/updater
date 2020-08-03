@@ -23,8 +23,7 @@ tar = { version = "0.4", optional = true }
 
 [target.'cfg(target_os="windows")'.dependencies.nwg]
 package = "native-windows-gui"
-git = "https://github.com/AmionSky/native-windows-gui"
-rev = "cb68325d6e8b36eb510886067f732f519da45f9f"
+version = "1.0.2"
 features = ["progress-bar", "timer"]
 optional = true
 

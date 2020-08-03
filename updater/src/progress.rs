@@ -161,6 +161,6 @@ mod tests {
         let progress = Progress::default();
         progress.set_maximum(100);
         progress.set_current(50);
-        assert_eq!(progress.percent(), 0.5);
+        assert!((0.5 - progress.percent()).abs() < f64::EPSILON);
     }
 }
