@@ -3,6 +3,7 @@ use crate::version;
 use semver::Version;
 use serde::Deserialize;
 use std::error::Error;
+use std::time::Duration;
 
 #[derive(Debug)]
 pub struct GitHubProvider {
@@ -36,7 +37,9 @@ impl Provider for GitHubProvider {
     }
 
     fn fetch(&mut self) -> Result<(), Box<dyn Error>> {
-        let release: GitHubResponse = json::from_reader(ureq::get(&self.url).call().into_reader())?;
+        let resp = ureq::get(&self.url).timeout(Duration::from_secs(10)).call();
+        // TODO: Handle timeouts nicely
+        let release: GitHubResponse = json::from_reader(resp.into_reader())?;
 
         match release {
             GitHubResponse::Release(release) => {

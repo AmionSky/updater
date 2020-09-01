@@ -63,7 +63,7 @@ pub trait Asset: Send {
         progress.set_indeterminate(false);
 
         // Send request message
-        let resp = ureq::get(self.url()).call();
+        let resp = ureq::get(self.url()).timeout_connect(5_000).call();
         if !resp.ok() {
             return DownloadResult::Error("Response not OK".into());
         }
