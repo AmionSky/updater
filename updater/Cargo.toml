@@ -23,17 +23,18 @@ tar = { version = "0.4", optional = true }
 
 [target.'cfg(target_os="windows")'.dependencies.nwg]
 package = "native-windows-gui"
-version = "1.0.2"
+version = "1.0"
 features = ["progress-bar", "timer"]
 optional = true
 
 [target.'cfg(target_os="linux")'.dependencies]
 gtk = { version = "0.9", features = ["v3_16"], optional = true }
 gio = { version = "0.9", features = ["v2_44"], optional = true }
+glib = { version = "0.10", optional = true }
 
 [features]
 default = ["procedures"]
-window = ["gtk", "gio", "nwg"]
+window = ["gtk", "gio", "glib", "nwg"]
 extract = ["ext-zip", "ext-targz"]
 ext-zip = ["zip"]
 ext-targz = ["flate2", "tar"]

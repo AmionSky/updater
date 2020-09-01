@@ -130,9 +130,9 @@ impl ProgressApp {
 
     fn activate(s: Rc<ProgressAppState>) {
         let sc = s.clone();
-        gtk::timeout_add(UPDATE_INTERVAL, move || Self::tick(&sc));
+        glib::timeout_add_local(UPDATE_INTERVAL, move || Self::tick(&sc));
         let sc = s.clone();
-        gtk::timeout_add(33, move || Self::pulse(&sc));
+        glib::timeout_add_local(33, move || Self::pulse(&sc));
 
         let sc = s.clone();
         s.window.connect_delete_event(move |_, _| Self::close(&sc));
