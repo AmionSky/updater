@@ -81,7 +81,7 @@ impl UpdateStep<UpdateData> for StepCheckVersion {
             return Ok(StepAction::Complete);
         }
 
-        data.asset = Some(data.provider.find_asset(&latest,&data.asset_name)?);
+        data.asset = Some(data.provider.find_asset(&latest, &data.asset_name)?);
 
         info!("Updating to v{} (from v{})", latest, data.version);
 

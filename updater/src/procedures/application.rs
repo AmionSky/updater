@@ -54,7 +54,10 @@ impl UpdateStep<UpdateData> for StepCheckVersion {
             return Ok(StepAction::Complete);
         }
 
-        data.asset = Some(data.provider.find_asset(data.latest.as_ref().unwrap(), &data.asset_name)?);
+        data.asset = Some(
+            data.provider
+                .find_asset(data.latest.as_ref().unwrap(), &data.asset_name)?,
+        );
 
         Ok(StepAction::Continue)
     }

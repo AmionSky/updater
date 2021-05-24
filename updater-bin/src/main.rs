@@ -10,7 +10,7 @@ use config::{Config, Verifiable};
 use log::{error, info, warn};
 use semver::Version;
 use std::error::Error;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use updater::Locker;
 
 fn main() {
@@ -76,7 +76,7 @@ fn start(cfg: &Config) {
     }
 }
 
-fn upd_app(wd: &PathBuf, cfg: &Config, should_launch: &mut bool, version: &mut Option<Version>) {
+fn upd_app(wd: &Path, cfg: &Config, should_launch: &mut bool, version: &mut Option<Version>) {
     if version.is_some() || cfg.update.should_install {
         let ver = version.clone().unwrap_or_else(|| Version::new(0, 0, 0));
         *version = match update::application(&wd, &cfg, ver) {
@@ -117,24 +117,22 @@ fn get_working_dir() -> Result<PathBuf, Box<dyn Error>> {
     Ok(dir)
 }
 
-fn clean_old_versions(wd: &PathBuf, version: &Version) -> Result<(), Box<dyn Error>> {
+fn clean_old_versions(wd: &Path, version: &Version) -> Result<(), Box<dyn Error>> {
     //let version_name = std::ffi::OsString::from(version.to_string());
     let dirs = std::fs::read_dir(wd)?;
 
     // Iterate over directories
-    for dir in dirs {
-        if let Ok(dir) = dir {
-            // Get the directory name
-            if let Some(dir_name) = dir.file_name().to_str() {
-                // Try to convert the name to semver
-                if let Ok(dir_version) = Version::parse(dir_name) {
-                    // Compare the dir_version to the current version
-                    if dir_version < *version {
-                        // If its older, delete the directory
-                        let dir_path = dir.path();
-                        if std::fs::remove_dir_all(dir_path).is_err() {
-                            error!("Failed to delete old version () directory!");
-                        }
+    for dir in dirs.flatten() {
+        // Get the directory name
+        if let Some(dir_name) = dir.file_name().to_str() {
+            // Try to convert the name to semver
+            if let Ok(dir_version) = Version::parse(dir_name) {
+                // Compare the dir_version to the current version
+                if dir_version < *version {
+                    // If its older, delete the directory
+                    let dir_path = dir.path();
+                    if std::fs::remove_dir_all(dir_path).is_err() {
+                        error!("Failed to delete old version () directory!");
                     }
                 }
             }
@@ -145,8 +143,15 @@ fn clean_old_versions(wd: &PathBuf, version: &Version) -> Result<(), Box<dyn Err
 }
 
 fn setup_logger() {
-    use simplelog::{LevelFilter, SimpleLogger, TermLogger, TerminalMode, ColorChoice};
-    if TermLogger::init(LevelFilter::max(), logger_config(), TerminalMode::Mixed, ColorChoice::Auto).is_err() {
+    use simplelog::{ColorChoice, LevelFilter, SimpleLogger, TermLogger, TerminalMode};
+    if TermLogger::init(
+        LevelFilter::max(),
+        logger_config(),
+        TerminalMode::Mixed,
+        ColorChoice::Auto,
+    )
+    .is_err()
+    {
         SimpleLogger::init(LevelFilter::Warn, logger_config()).expect("Logger failed to init")
     }
 }

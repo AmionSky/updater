@@ -53,7 +53,7 @@ pub fn zip<P: AsRef<Path>>(
         }
 
         let mut zipped_item = archive.by_index(i)?;
-        let item_path = zipped_item.enclosed_name().ok_or_else(|| "Disallowed path")?;
+        let item_path = zipped_item.enclosed_name().ok_or("Disallowed path")?;
         let out_path = target.as_ref().join(item_path);
 
         if zipped_item.is_dir() {

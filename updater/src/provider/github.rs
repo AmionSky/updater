@@ -76,7 +76,7 @@ impl Provider for GitHubProvider {
 
         for release in releases {
             if release.version()? == *version {
-                return Ok(release.assets.iter().map(|x| x as &dyn Asset).collect())
+                return Ok(release.assets.iter().map(|x| x as &dyn Asset).collect());
             }
         }
 
@@ -143,7 +143,7 @@ impl Asset for GitHubAsset {
     fn size(&self) -> u64 {
         self.size
     }
-    
+
     fn url(&self) -> &str {
         &self.browser_download_url
     }
