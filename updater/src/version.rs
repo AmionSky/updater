@@ -1,14 +1,15 @@
 use lazy_static::lazy_static;
 use regex::Regex;
+use semver::Version;
 use std::error::Error;
 
 /// Extracts only the semver from a string
-pub fn extract(version: &str) -> Result<String, Box<dyn Error>> {
+pub fn extract(version: &str) -> Result<Version, Box<dyn Error>> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"\d+\u{2E}\d+\u{2E}\d+").unwrap();
     }
     let mat = RE.find(version).ok_or("Version regex match failed")?;
-    Ok(version[mat.start()..mat.end()].into())
+    Ok(Version::parse(version[mat.start()..mat.end()].into())?)
 }
 
 #[cfg(test)]
@@ -71,14 +72,14 @@ mod tests {
     fn extract_raw() {
         let ver = "1.2.3";
         let sver = extract(&ver).unwrap();
-        assert_eq!(ver, &sver);
+        assert_eq!(Version::new(1, 2, 3), sver);
     }
 
     #[test]
     fn extract_with_prefix() {
         let ver = "v1.2.3";
         let sver = extract(&ver).unwrap();
-        assert_eq!("1.2.3", &sver);
+        assert_eq!(Version::new(1, 2, 3), sver);
     }
 
     #[test]

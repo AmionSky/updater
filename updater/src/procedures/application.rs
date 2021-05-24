@@ -48,13 +48,13 @@ impl UpdateStep<UpdateData> for StepCheckVersion {
         data.provider.fetch()?;
 
         // Check version difference
-        data.latest = Some(data.provider.version()?);
+        data.latest = Some(data.provider.latest()?);
         if data.latest.as_ref().unwrap() <= &data.version {
             info!("{} is up-to-date", &data.app_name);
             return Ok(StepAction::Complete);
         }
 
-        data.asset = Some(data.provider.find_asset(&data.asset_name)?);
+        data.asset = Some(data.provider.find_asset(data.latest.as_ref().unwrap(), &data.asset_name)?);
 
         Ok(StepAction::Continue)
     }
