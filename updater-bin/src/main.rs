@@ -145,8 +145,8 @@ fn clean_old_versions(wd: &PathBuf, version: &Version) -> Result<(), Box<dyn Err
 }
 
 fn setup_logger() {
-    use simplelog::{LevelFilter, SimpleLogger, TermLogger, TerminalMode};
-    if TermLogger::init(LevelFilter::max(), logger_config(), TerminalMode::Mixed).is_err() {
+    use simplelog::{LevelFilter, SimpleLogger, TermLogger, TerminalMode, ColorChoice};
+    if TermLogger::init(LevelFilter::max(), logger_config(), TerminalMode::Mixed, ColorChoice::Auto).is_err() {
         SimpleLogger::init(LevelFilter::Warn, logger_config()).expect("Logger failed to init")
     }
 }

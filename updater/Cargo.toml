@@ -12,8 +12,8 @@ serde = { version = "1", features = ["derive"] }
 json = { package = "serde_json", version = "1" }
 log = "0.4"
 fs2 = "0.4"
-semver = "0.10"
-ureq = { version = "1", default-features = false, features = ["tls"] }
+semver = "0.11"
+ureq = { version = "2", default-features = false, features = ["tls"] }
 regex = { version = "1", default-features = false, features = ["std", "unicode-perl"] }
 lazy_static = "1"
 tempfile = "3"

@@ -37,9 +37,9 @@ impl Provider for GitHubProvider {
     }
 
     fn fetch(&mut self) -> Result<(), Box<dyn Error>> {
-        let resp = ureq::get(&self.url).timeout(Duration::from_secs(10)).call();
+        let response = ureq::get(&self.url).timeout(Duration::from_secs(10)).call()?;
         // TODO: Handle timeouts nicely
-        let release: GitHubResponse = json::from_reader(resp.into_reader())?;
+        let release: GitHubResponse = json::from_reader(response.into_reader())?;
 
         match release {
             GitHubResponse::Release(release) => {

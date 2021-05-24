@@ -63,13 +63,13 @@ pub trait Asset: Send {
         progress.set_indeterminate(false);
 
         // Send request message
-        let resp = ureq::get(self.url()).timeout_connect(5_000).call();
-        if !resp.ok() {
+        let response = ureq::get(self.url()).call();
+        if response.is_err() {
             return DownloadResult::Error("Response not OK".into());
         }
 
         // Init reader and temp file
-        let mut reader = resp.into_reader();
+        let mut reader = response.unwrap().into_reader(); // 'response' checked above
         let mut out = match tempfile::tempfile() {
             Ok(file) => file,
             Err(e) => return DownloadResult::Error(e.into()),

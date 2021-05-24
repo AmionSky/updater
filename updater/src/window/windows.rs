@@ -88,7 +88,7 @@ pub struct ProgressApp {
     action_label: nwg::Label,
     progress_label: nwg::Label,
     progress_bar: nwg::ProgressBar,
-    timer: nwg::Timer,
+    timer: nwg::AnimationTimer,
     marquee: AtomicBool,
 }
 
@@ -102,7 +102,7 @@ impl ProgressApp {
             action_label: nwg::Label::default(),
             progress_label: nwg::Label::default(),
             progress_bar: nwg::ProgressBar::default(),
-            timer: nwg::Timer::default(),
+            timer: nwg::AnimationTimer::default(),
             marquee: AtomicBool::new(false),
         }
     }
@@ -208,9 +208,9 @@ mod basic_app_ui {
                 .parent(&data.window)
                 .build(&mut data.progress_bar)?;
 
-            nwg::Timer::builder()
-                .interval(UPDATE_INTERVAL)
-                .stopped(false)
+            nwg::AnimationTimer::builder()
+                .interval(std::time::Duration::from_millis(UPDATE_INTERVAL as u64))
+                .active(true)
                 .parent(&data.window)
                 .build(&mut data.timer)?;
 
