@@ -12,7 +12,7 @@ serde = { version = "1", features = ["derive"] }
 json = { package = "serde_json", version = "1" }
 log = "0.4"
 fs2 = "0.4"
-semver = "0.11"
+semver = "1"
 ureq = { version = "2", default-features = false, features = ["tls"] }
 regex = { version = "1", default-features = false, features = ["std", "unicode-perl"] }
 lazy_static = "1"
@@ -23,7 +23,7 @@ tar = { version = "0.4", optional = true }
 
 [target.'cfg(target_os="windows")'.dependencies.nwg]
 package = "native-windows-gui"
-version = "1.0"
+version = "1"
 features = ["progress-bar", "timer"]
 optional = true
 
