@@ -61,7 +61,7 @@ fn start(cfg: &Config) {
     }
 
     // Update/Install application
-    upd_app(&working_dir, &cfg, &mut should_launch, &mut version);
+    upd_app(&working_dir, cfg, &mut should_launch, &mut version);
 
     // Launch application if needed
     if should_launch {
@@ -79,7 +79,7 @@ fn start(cfg: &Config) {
 fn upd_app(wd: &Path, cfg: &Config, should_launch: &mut bool, version: &mut Option<Version>) {
     if version.is_some() || cfg.update.should_install {
         let ver = version.clone().unwrap_or_else(|| Version::new(0, 0, 0));
-        *version = match update::application(&wd, &cfg, ver) {
+        *version = match update::application(&wd, cfg, ver) {
             Ok(v) => {
                 if version::write_file(version::app_file(&wd), &v).is_err() {
                     error!("Failed to update version file");

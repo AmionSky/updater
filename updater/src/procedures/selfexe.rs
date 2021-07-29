@@ -130,7 +130,7 @@ impl UpdateStep<UpdateData> for StepInstall {
         info!("Starting install");
 
         // Copy new updater exe
-        copy_file(&data.file.as_ref().unwrap(), &data.new_exe)?;
+        copy_file(data.file.as_ref().unwrap(), &data.new_exe)?;
 
         // Swap updater exe
         replace_temp(&data.new_exe, &data.current_exe, &data.temp_exe)?;

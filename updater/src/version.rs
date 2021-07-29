@@ -71,20 +71,20 @@ mod tests {
     #[test]
     fn extract_raw() {
         let ver = "1.2.3";
-        let sver = extract(&ver).unwrap();
+        let sver = extract(ver).unwrap();
         assert_eq!(Version::new(1, 2, 3), sver);
     }
 
     #[test]
     fn extract_with_prefix() {
         let ver = "v1.2.3";
-        let sver = extract(&ver).unwrap();
+        let sver = extract(ver).unwrap();
         assert_eq!(Version::new(1, 2, 3), sver);
     }
 
     #[test]
     fn extract_incorrect() {
         let ver = "1.W.3";
-        assert!(extract(&ver).is_err());
+        assert!(extract(ver).is_err());
     }
 }

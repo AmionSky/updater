@@ -114,7 +114,7 @@ impl ProgressApp {
         }
 
         for func in self.receiver.try_iter() {
-            func(&self);
+            func(self);
         }
 
         let indeterminate = self.progress.indeterminate();

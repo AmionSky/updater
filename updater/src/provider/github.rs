@@ -25,7 +25,7 @@ impl GitHubProvider {
     /// Gets the fetched data and returns it or Err if not.
     fn releases(&self) -> Result<&Vec<GitHubRelease>, Box<dyn Error>> {
         match self.releases.as_ref() {
-            Some(rel) => Ok(&rel),
+            Some(rel) => Ok(rel),
             None => Err("No fetched content found!".into()),
         }
     }
