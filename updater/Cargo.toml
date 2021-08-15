@@ -28,13 +28,12 @@ features = ["progress-bar", "timer"]
 optional = true
 
 [target.'cfg(target_os="linux")'.dependencies]
-gtk = { version = "0.9", features = ["v3_16"], optional = true }
-gio = { version = "0.9", features = ["v2_44"], optional = true }
-glib = { version = "0.10", optional = true }
+gtk = { version = "0.14", features = ["v3_20"], optional = true }
+glib = { version = "0.14", features = ["v2_50"],  optional = true }
 
 [features]
 default = ["procedures"]
-window = ["gtk", "gio", "glib", "nwg"]
+window = ["gtk", "glib", "nwg"]
 extract = ["ext-zip", "ext-targz"]
 ext-zip = ["zip"]
 ext-targz = ["flate2", "tar"]

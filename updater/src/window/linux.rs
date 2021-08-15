@@ -1,6 +1,5 @@
 use super::{percent_text, ProgressWindow, WindowConfig, UPDATE_INTERVAL};
 use crate::Progress;
-use gio::prelude::*;
 use gtk::prelude::*;
 use lazy_static::lazy_static;
 use log::error;
@@ -10,6 +9,7 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::Arc;
 use std::sync::{Mutex, MutexGuard};
 use std::thread;
+use std::time::Duration;
 
 type CommType = Box<dyn Fn(&ProgressAppState) + Send + 'static>;
 type InitType = Option<Sender<(Receiver<CommType>, Arc<Progress>)>>;
@@ -109,12 +109,12 @@ impl ProgressApp {
         let app = gtk::Application::new(
             Some("com.github.amionsky.updater.progress"),
             Default::default(),
-        )?;
+        );
 
         let receiver = Rc::new(receiver);
         app.connect_activate(move |app| {
             let state = Rc::new(ProgressAppState::new(
-                &app,
+                app,
                 receiver.clone(),
                 progress.clone(),
             ));
@@ -125,14 +125,16 @@ impl ProgressApp {
     }
 
     pub fn run(&self) {
-        self.app.run(&[]);
+        self.app.run();
     }
 
     fn activate(s: Rc<ProgressAppState>) {
         let sc = s.clone();
-        glib::timeout_add_local(UPDATE_INTERVAL, move || Self::tick(&sc));
+        glib::timeout_add_local(Duration::from_millis(UPDATE_INTERVAL as u64), move || {
+            Self::tick(&sc)
+        });
         let sc = s.clone();
-        glib::timeout_add_local(33, move || Self::pulse(&sc));
+        glib::timeout_add_local(Duration::from_millis(33), move || Self::pulse(&sc));
 
         let sc = s.clone();
         s.window.connect_delete_event(move |_, _| Self::close(&sc));
@@ -159,7 +161,7 @@ impl ProgressApp {
         }
 
         for func in state.receiver.try_iter() {
-            func(&state);
+            func(state);
         }
 
         if state.progress.indeterminate() {
@@ -204,10 +206,10 @@ impl ProgressAppState {
         // Create widgets
         let window = gtk::ApplicationWindow::new(app);
         window.set_position(gtk::WindowPosition::Center);
-        window.set_property_width_request(360);
+        window.set_width_request(360);
 
         let base_box = gtk::Box::new(gtk::Orientation::Vertical, 8);
-        base_box.set_property_margin(16);
+        base_box.set_margin(16);
 
         let label_box = gtk::Box::new(gtk::Orientation::Horizontal, 8);
 
