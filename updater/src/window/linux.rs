@@ -80,8 +80,7 @@ impl ProgressWindow for GtkProgressWindow {
 
     fn close(&self) {
         self.send(Box::new(move |app| {
-            // Specify type cause of rust-analyzer issue
-            let window: &gtk::ApplicationWindow = &app.window;
+            let window = &app.window;
             window.close();
         }));
     }
