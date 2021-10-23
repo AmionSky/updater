@@ -1,9 +1,9 @@
 use super::{percent_text, ProgressWindow, WindowConfig, UPDATE_INTERVAL};
 use crate::Progress;
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use log::error;
 use nwg::NativeUi;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::Arc;
 
 type CommType = Box<dyn Fn(&ProgressApp) + Send + 'static>;
@@ -14,7 +14,7 @@ pub struct Win32ProgressWindow {
 
 impl Win32ProgressWindow {
     pub fn new(config: WindowConfig) -> Self {
-        let (sender, receiver) = channel();
+        let (sender, receiver) = unbounded();
         let window = Self { sender };
 
         window.set_title(config.title);

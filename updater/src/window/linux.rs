@@ -1,69 +1,59 @@
 use super::{percent_text, ProgressWindow, WindowConfig, UPDATE_INTERVAL};
 use crate::Progress;
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use gtk::prelude::*;
 use lazy_static::lazy_static;
 use log::error;
 use std::error::Error;
 use std::rc::Rc;
-use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::Arc;
-use std::sync::{Mutex, MutexGuard};
 use std::thread;
 use std::time::Duration;
 
 type CommType = Box<dyn Fn(&ProgressAppState) + Send + 'static>;
-type InitType = Option<Sender<(Receiver<CommType>, Arc<Progress>)>>;
 
 pub struct GtkProgressWindow {
     sender: Sender<CommType>,
 }
 
 impl GtkProgressWindow {
-    // GTK can only be used from a single thread so we create a thread the first
-    // time show is called and send the WindowConfig to it.
     pub fn new(config: WindowConfig) -> Result<Self, Box<dyn Error>> {
+        // GTK can only be used from a single thread so we create a thread the first
+        // time show is called and send the WindowConfig to it.
         lazy_static! {
-            static ref GTK_SENDER: Mutex<InitType> = Mutex::new(None);
+            static ref GTK_THREAD: Sender<(Receiver<CommType>, Arc<Progress>)> = {
+                let (gtk_sender, gtk_receiver) = unbounded();
+
+                thread::spawn(move || loop {
+                    let (receiver, progress) = match gtk_receiver.recv() {
+                        Ok(ret) => ret,
+                        Err(e) => {
+                            error!("GTK creator receiver failed: {}", e);
+                            break;
+                        }
+                    };
+
+                    let app = match ProgressApp::new(receiver, progress) {
+                        Ok(app) => app,
+                        Err(e) => {
+                            error!("Failed to create GTK Application: {}", e);
+                            continue;
+                        }
+                    };
+                    app.run();
+                });
+
+                gtk_sender
+            };
         }
 
-        // Specify type cause of rust-analyzer issue
-        let mut gtk_sender: MutexGuard<InitType> = GTK_SENDER.lock()?;
-
-        if gtk_sender.is_none() {
-            let (new_gtk_sender, gtk_receiver) = channel();
-
-            thread::spawn(move || loop {
-                let (receiver, progress) = match gtk_receiver.recv() {
-                    Ok(ret) => ret,
-                    Err(e) => {
-                        error!("GTK creator receiver failed: {}", e);
-                        break;
-                    }
-                };
-
-                let app = match ProgressApp::new(receiver, progress) {
-                    Ok(app) => app,
-                    Err(e) => {
-                        error!("Failed to create GTK Application: {}", e);
-                        continue;
-                    }
-                };
-                app.run();
-            });
-
-            *gtk_sender = Some(new_gtk_sender);
-        }
-
-        let (sender, receiver) = channel();
+        let (sender, receiver) = unbounded();
         let window = Self { sender };
 
         window.set_title(config.title);
         window.set_label(config.label);
 
-        gtk_sender
-            .as_ref()
-            .unwrap()
-            .send((receiver, config.progress))?;
+        GTK_THREAD.send((receiver, config.progress))?;
 
         Ok(window)
     }
