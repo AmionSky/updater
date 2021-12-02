@@ -1,13 +1,10 @@
-use crate::extract::ExtractResult;
+use crate::extract::{self, ExtractResult};
 use crate::provider::{Asset, DownloadResult, Provider};
-use crate::update::{StepAction, UpdateProcedure, UpdateStep};
-use crate::{extract, Progress};
+use crate::updater::{State, StepAction, StepResult, Updater};
 use log::info;
 use semver::Version;
-use std::error::Error;
 use std::fs::File;
 use std::path::PathBuf;
-use std::sync::Arc;
 
 pub struct UpdateData {
     pub provider: Box<dyn Provider>,
@@ -41,108 +38,90 @@ impl UpdateData {
     }
 }
 
-pub struct StepCheckVersion;
-impl UpdateStep<UpdateData> for StepCheckVersion {
-    fn exec(&self, data: &mut UpdateData, _: &Arc<Progress>) -> Result<StepAction, Box<dyn Error>> {
-        info!("Checking for latest version via {}", data.provider.name());
-        data.provider.fetch()?;
-
-        // Check version difference
-        data.latest = Some(data.provider.latest()?);
-        if data.latest.as_ref().unwrap() <= &data.version {
-            info!("{} is up-to-date", &data.app_name);
-            return Ok(StepAction::Complete);
-        }
-
-        data.asset = Some(
-            data.provider
-                .find_asset(data.latest.as_ref().unwrap(), &data.asset_name)?,
-        );
-
-        Ok(StepAction::Continue)
-    }
-
-    fn label(&self, _: &UpdateData) -> String {
-        "Checking for latest version...".to_string()
-    }
+pub fn create(data: UpdateData) -> Updater<UpdateData> {
+    let mut updater = Updater::new(data);
+    updater.set_title(format!("{} Updater", updater.data().app_name));
+    updater.add_step(step_check_version);
+    updater.add_step(step_download);
+    updater.add_step(step_install);
+    updater
 }
 
-pub struct StepDownload;
-impl UpdateStep<UpdateData> for StepDownload {
-    fn exec(
-        &self,
-        data: &mut UpdateData,
-        progress: &Arc<Progress>,
-    ) -> Result<StepAction, Box<dyn Error>> {
-        info!(
-            "Downloading {} v{}",
-            &data.app_name,
-            data.latest.as_ref().unwrap()
-        );
+fn step_check_version(state: &mut State, data: &mut UpdateData) -> StepResult {
+    state.set_label("Checking for latest version...".into());
 
-        let dl_result = data.asset.as_ref().unwrap().download(progress.clone());
+    info!("Checking for latest version via {}", data.provider.name());
+    data.provider.fetch()?;
 
-        let file = match dl_result {
-            DownloadResult::Complete(file) => file,
-            DownloadResult::Cancelled => return Ok(StepAction::Cancel),
-            DownloadResult::Error(e) => return Err(format!("Asset download failed: {}", e).into()),
-        };
-
-        data.file = Some(file);
-        info!("Download finished!");
-
-        Ok(StepAction::Continue)
+    // Check version difference
+    data.latest = Some(data.provider.latest()?);
+    if data.latest.as_ref().unwrap() <= &data.version {
+        info!("{} is up-to-date", &data.app_name);
+        return Ok(StepAction::Complete);
     }
 
-    fn label(&self, data: &UpdateData) -> String {
-        format!(
-            "Downloading {:.2} MB",
-            data.asset.as_ref().unwrap().size() as f64 / 1_000_000.0
-        )
-    }
+    data.asset = Some(
+        data.provider
+            .find_asset(data.latest.as_ref().unwrap(), &data.asset_name)?,
+    );
+
+    Ok(StepAction::Continue)
 }
 
-pub struct StepInstall;
-impl UpdateStep<UpdateData> for StepInstall {
-    fn exec(
-        &self,
-        data: &mut UpdateData,
-        progress: &Arc<Progress>,
-    ) -> Result<StepAction, Box<dyn Error>> {
-        info!("Starting install");
+fn step_download(state: &mut State, data: &mut UpdateData) -> StepResult {
+    state.set_label(format!(
+        "Downloading {:.2} MB",
+        data.asset.as_ref().unwrap().size() as f64 / 1_000_000.0
+    ));
 
-        // (Re)Create install folder
-        let install_path = data
-            .directory
-            .join(data.latest.as_ref().unwrap().to_string());
-        if install_path.is_dir() {
-            std::fs::remove_dir_all(&install_path)?;
-        }
-        std::fs::create_dir(&install_path)?;
+    info!(
+        "Downloading {} v{}",
+        &data.app_name,
+        data.latest.as_ref().unwrap()
+    );
 
-        // Unpack asset
-        if extract::asset(
-            data.asset.as_ref().unwrap().name(),
-            data.file.take().unwrap(),
-            &install_path,
-            progress.clone(),
-        )? == ExtractResult::Cancelled
-        {
-            return Ok(StepAction::Cancel);
-        }
+    let dl_result = data
+        .asset
+        .as_ref()
+        .unwrap()
+        .download(state.progress().clone());
 
-        Ok(StepAction::Continue)
-    }
+    let file = match dl_result {
+        DownloadResult::Complete(file) => file,
+        DownloadResult::Cancelled => return Ok(StepAction::Cancel),
+        DownloadResult::Error(e) => return Err(format!("Asset download failed: {}", e).into()),
+    };
 
-    fn label(&self, _: &UpdateData) -> String {
-        "Installing...".to_string()
-    }
+    data.file = Some(file);
+    info!("Download finished!");
+
+    Ok(StepAction::Continue)
 }
 
-pub fn create(data: UpdateData) -> UpdateProcedure<UpdateData> {
-    let mut procedure = UpdateProcedure::new(format!("{} Updater", &data.app_name), data);
-    procedure.add_step(Box::new(StepCheckVersion));
-    procedure.add_step(Box::new(StepDownload));
-    procedure.add_step(Box::new(StepInstall));
-    procedure
+fn step_install(state: &mut State, data: &mut UpdateData) -> StepResult {
+    state.set_label("Installing...".into());
+
+    info!("Starting install");
+
+    // (Re)Create install folder
+    let install_path = data
+        .directory
+        .join(data.latest.as_ref().unwrap().to_string());
+    if install_path.is_dir() {
+        std::fs::remove_dir_all(&install_path)?;
+    }
+    std::fs::create_dir(&install_path)?;
+
+    // Unpack asset
+    if extract::asset(
+        data.asset.as_ref().unwrap().name(),
+        data.file.take().unwrap(),
+        &install_path,
+        state.progress().clone(),
+    )? == ExtractResult::Cancelled
+    {
+        return Ok(StepAction::Cancel);
+    }
+
+    Ok(StepAction::Continue)
 }

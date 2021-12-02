@@ -2,7 +2,7 @@ mod config;
 
 pub use config::WindowConfig;
 
-use std::error::Error;
+use std::{error::Error, fmt::Debug};
 
 #[cfg(target_os = "linux")]
 mod linux;
@@ -21,7 +21,7 @@ pub fn create(config: WindowConfig) -> Result<Box<dyn ProgressWindow>, Box<dyn E
     Ok(Box::new(window))
 }
 
-pub trait ProgressWindow {
+pub trait ProgressWindow: Debug {
     /// Sets the progress window's title
     fn set_title(&self, text: String);
 

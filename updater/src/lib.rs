@@ -3,7 +3,7 @@ pub mod extract;
 #[cfg(feature = "procedures")]
 pub mod procedures;
 pub mod provider;
-pub mod update;
+pub mod updater;
 #[cfg(feature = "window")]
 pub mod window;
 

@@ -12,6 +12,7 @@ use std::time::Duration;
 
 type CommType = Box<dyn Fn(&ProgressAppState) + Send + 'static>;
 
+#[derive(Debug)]
 pub struct GtkProgressWindow {
     sender: Sender<CommType>,
 }

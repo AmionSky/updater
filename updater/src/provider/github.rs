@@ -114,6 +114,7 @@ struct GitHubError {
     message: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct GitHubRelease {
     name: String,

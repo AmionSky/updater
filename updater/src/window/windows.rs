@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 type CommType = Box<dyn Fn(&ProgressApp) + Send + 'static>;
 
+#[derive(Debug)]
 pub struct Win32ProgressWindow {
     sender: Sender<CommType>,
 }

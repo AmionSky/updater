@@ -1,6 +1,5 @@
 use crate::provider::{Asset, DownloadResult, Provider};
-use crate::update::{StepAction, UpdateProcedure, UpdateStep};
-use crate::Progress;
+use crate::updater::{State, StepAction, StepResult, Updater};
 use log::{error, info};
 use semver::Version;
 use std::error::Error;
@@ -8,7 +7,6 @@ use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
 use std::path::PathBuf;
-use std::sync::Arc;
 
 pub struct UpdateData {
     provider: Box<dyn Provider>,
@@ -44,103 +42,83 @@ impl UpdateData {
     }
 }
 
-pub fn create(data: UpdateData) -> UpdateProcedure<UpdateData> {
-    let mut procedure = UpdateProcedure::new("Self-Updater".to_string(), data);
-    procedure.add_step(Box::new(StepCleanUp));
-    procedure.add_step(Box::new(StepCheckVersion));
-    procedure.add_step(Box::new(StepDownload));
-    procedure.add_step(Box::new(StepInstall));
-    procedure
+pub fn create(data: UpdateData) -> Updater<UpdateData> {
+    let mut updater = Updater::new(data);
+    updater.set_title("Self-Updater".into());
+    updater.add_step(step_cleanup);
+    updater.add_step(step_check_version);
+    updater.add_step(step_download);
+    updater.add_step(step_install);
+    updater
 }
 
-pub struct StepCleanUp;
-impl UpdateStep<UpdateData> for StepCleanUp {
-    fn exec(&self, data: &mut UpdateData, _: &Arc<Progress>) -> Result<StepAction, Box<dyn Error>> {
-        if data.temp_exe.is_file() {
-            std::fs::remove_file(&data.temp_exe)?;
-        }
+fn step_cleanup(state: &mut State, data: &mut UpdateData) -> StepResult {
+    state.set_label("Cleaning up...".into());
 
-        Ok(StepAction::Continue)
+    if data.temp_exe.is_file() {
+        std::fs::remove_file(&data.temp_exe)?;
     }
 
-    fn label(&self, _: &UpdateData) -> String {
-        "Cleaning up...".to_string()
-    }
+    Ok(StepAction::Continue)
 }
 
-pub struct StepCheckVersion;
-impl UpdateStep<UpdateData> for StepCheckVersion {
-    fn exec(&self, data: &mut UpdateData, _: &Arc<Progress>) -> Result<StepAction, Box<dyn Error>> {
-        info!("Checking for latest version via {}", data.provider.name());
-        data.provider.fetch()?;
+fn step_check_version(state: &mut State, data: &mut UpdateData) -> StepResult {
+    state.set_label("Checking for latest version...".into());
 
-        // Check version difference
-        let latest = data.provider.latest()?;
-        if latest <= data.version {
-            info!("Up-to-date");
-            return Ok(StepAction::Complete);
-        }
+    info!("Checking for latest version via {}", data.provider.name());
+    data.provider.fetch()?;
 
-        data.asset = Some(data.provider.find_asset(&latest, &data.asset_name)?);
-
-        info!("Updating to v{} (from v{})", latest, data.version);
-
-        data.version = latest;
-
-        Ok(StepAction::Continue)
+    // Check version difference
+    let latest = data.provider.latest()?;
+    if latest <= data.version {
+        info!("Up-to-date");
+        return Ok(StepAction::Complete);
     }
 
-    fn label(&self, _: &UpdateData) -> String {
-        "Checking for latest version...".to_string()
-    }
+    data.asset = Some(data.provider.find_asset(&latest, &data.asset_name)?);
+
+    info!("Updating to v{} (from v{})", latest, data.version);
+
+    data.version = latest;
+
+    Ok(StepAction::Continue)
 }
 
-pub struct StepDownload;
-impl UpdateStep<UpdateData> for StepDownload {
-    fn exec(
-        &self,
-        data: &mut UpdateData,
-        progress: &Arc<Progress>,
-    ) -> Result<StepAction, Box<dyn Error>> {
-        let dl_result = data.asset.as_ref().unwrap().download(progress.clone());
+fn step_download(state: &mut State, data: &mut UpdateData) -> StepResult {
+    state.set_label(format!(
+        "Downloading {:.2} MB",
+        data.asset.as_ref().unwrap().size() as f64 / 1_000_000.0
+    ));
 
-        let file = match dl_result {
-            DownloadResult::Complete(file) => file,
-            DownloadResult::Cancelled => return Ok(StepAction::Cancel),
-            DownloadResult::Error(e) => return Err(format!("Asset download failed: {}", e).into()),
-        };
+    let dl_result = data
+        .asset
+        .as_ref()
+        .unwrap()
+        .download(state.progress().clone());
 
-        data.file = Some(file);
-        info!("Download finished!");
+    let file = match dl_result {
+        DownloadResult::Complete(file) => file,
+        DownloadResult::Cancelled => return Ok(StepAction::Cancel),
+        DownloadResult::Error(e) => return Err(format!("Asset download failed: {}", e).into()),
+    };
 
-        Ok(StepAction::Continue)
-    }
+    data.file = Some(file);
+    info!("Download finished!");
 
-    fn label(&self, data: &UpdateData) -> String {
-        format!(
-            "Downloading {:.2} MB",
-            data.asset.as_ref().unwrap().size() as f64 / 1_000_000.0
-        )
-    }
+    Ok(StepAction::Continue)
 }
+fn step_install(state: &mut State, data: &mut UpdateData) -> StepResult {
+    state.set_label("Installing...".into());
 
-pub struct StepInstall;
-impl UpdateStep<UpdateData> for StepInstall {
-    fn exec(&self, data: &mut UpdateData, _: &Arc<Progress>) -> Result<StepAction, Box<dyn Error>> {
-        info!("Starting install");
+    info!("Starting install");
 
-        // Copy new updater exe
-        copy_file(data.file.as_ref().unwrap(), &data.new_exe)?;
+    // Copy new updater exe
+    copy_file(data.file.as_ref().unwrap(), &data.new_exe)?;
 
-        // Swap updater exe
-        replace_temp(&data.new_exe, &data.current_exe, &data.temp_exe)?;
+    // Swap updater exe
+    replace_temp(&data.new_exe, &data.current_exe, &data.temp_exe)?;
 
-        Ok(StepAction::Continue)
-    }
-
-    fn label(&self, _: &UpdateData) -> String {
-        "Installing...".to_string()
-    }
+    Ok(StepAction::Continue)
 }
 
 fn copy_file<P: AsRef<Path>>(file: &File, target_path: P) -> Result<(), Box<dyn Error>> {
