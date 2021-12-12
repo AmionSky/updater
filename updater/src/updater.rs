@@ -3,6 +3,9 @@ use log::info;
 use std::error::Error;
 use std::sync::Arc;
 
+#[cfg(feature = "window")]
+use crate::window::ProgressWindow;
+
 pub type StepResult = Result<StepAction, Box<dyn Error>>;
 
 #[derive(Debug)]
@@ -50,7 +53,7 @@ impl<T> Updater<T> {
     pub fn execute(&mut self) -> Result<(), Box<dyn Error>> {
         #[cfg(feature = "window")]
         {
-            self.state.window = Some(self.open_window()?);
+            self.state.window = Some(self.create_window()?);
         }
 
         for step in &self.steps {
@@ -78,12 +81,12 @@ impl<T> Updater<T> {
     }
 
     #[cfg(feature = "window")]
-    fn open_window(&self) -> Result<Box<dyn crate::window::ProgressWindow>, Box<dyn Error>> {
+    fn create_window(&self) -> Result<Box<dyn ProgressWindow>, Box<dyn Error>> {
         use crate::window::{self, WindowConfig};
 
         let config = WindowConfig::new(
             self.title().clone(),
-            "Initializing...".to_string(),
+            "Initializing...".into(),
             self.progress().clone(),
         );
 
@@ -97,7 +100,7 @@ pub struct State {
     label: String,
     progress: Arc<Progress>,
     #[cfg(feature = "window")]
-    window: Option<Box<dyn crate::window::ProgressWindow>>,
+    window: Option<Box<dyn ProgressWindow>>,
 }
 
 impl State {
@@ -127,7 +130,7 @@ impl State {
     }
 
     #[cfg(feature = "window")]
-    pub fn window(&self) -> Option<&dyn crate::window::ProgressWindow> {
+    pub fn window(&self) -> Option<&dyn ProgressWindow> {
         self.window.as_deref()
     }
 }
