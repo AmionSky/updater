@@ -1,6 +1,6 @@
 [package]
 name = "updater"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Csányi István <icsanyi96@gmail.com>"]
 edition = "2021"
 publish = false
