@@ -3,14 +3,15 @@ pub mod extract;
 #[cfg(feature = "procedures")]
 pub mod procedures;
 pub mod provider;
-pub mod updater;
 #[cfg(feature = "window")]
 pub mod window;
 
+mod updater;
 mod locker;
 mod progress;
 mod version;
 
+pub use self::updater::*;
 pub use locker::Locker;
 pub use progress::Progress;
 pub use semver::Version;
