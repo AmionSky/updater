@@ -4,7 +4,7 @@ use std::fs::File;
 use std::path::Path;
 use std::sync::Arc;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ExtractResult {
     Complete,
     Cancelled,

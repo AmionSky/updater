@@ -79,9 +79,9 @@ fn start(cfg: &Config) {
 fn upd_app(wd: &Path, cfg: &Config, should_launch: &mut bool, version: &mut Option<Version>) {
     if version.is_some() || cfg.update.should_install {
         let ver = version.clone().unwrap_or_else(|| Version::new(0, 0, 0));
-        *version = match update::application(&wd, cfg, ver) {
+        *version = match update::application(wd, cfg, ver) {
             Ok(v) => {
-                if version::write_file(version::app_file(&wd), &v).is_err() {
+                if version::write_file(version::app_file(wd), &v).is_err() {
                     error!("Failed to update version file");
                 };
                 Some(v)

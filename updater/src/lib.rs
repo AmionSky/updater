@@ -6,9 +6,9 @@ pub mod provider;
 #[cfg(feature = "window")]
 pub mod window;
 
-mod updater;
 mod locker;
 mod progress;
+mod updater;
 mod version;
 
 pub use self::updater::*;
