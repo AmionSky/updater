@@ -7,7 +7,7 @@ edition = "2021"
 [dependencies]
 updater = { path = "../updater", features = ["window", "extract", "procedures"] }
 serde = { version = "1", features = ["derive"] }
-toml = "0.5"
+toml = "0.7"
 log = "0.4"
 semver = "1"
 simplelog  = "0.12"

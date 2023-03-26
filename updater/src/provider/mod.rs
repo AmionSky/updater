@@ -76,8 +76,7 @@ pub trait Asset: Send {
         };
 
         // Copy received data into temo file
-        const BUF_SIZE: usize = 4096;
-        let mut buf: [u8; BUF_SIZE] = [0; BUF_SIZE];
+        let mut buf = [0; 16384];
         loop {
             if progress.cancelled() {
                 return DownloadResult::Cancelled;
