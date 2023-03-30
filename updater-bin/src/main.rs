@@ -165,8 +165,8 @@ fn logger_config() -> simplelog::Config {
 
 #[cfg(target_os = "windows")]
 fn attach_console() {
-    use winapi::um::wincon::{AttachConsole, ATTACH_PARENT_PROCESS};
-    let _ = unsafe { AttachConsole(ATTACH_PARENT_PROCESS) };
+    use windows_sys::Win32::System::Console::{AttachConsole, ATTACH_PARENT_PROCESS};
+    unsafe { AttachConsole(ATTACH_PARENT_PROCESS) };
 }
 
 #[cfg(test)]
