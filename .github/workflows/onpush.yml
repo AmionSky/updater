@@ -1,4 +1,4 @@
-name: Run tests
+name: Test commit
 
 on:
   push:
@@ -15,7 +15,5 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Update Rust
-        run: rustup update
       - name: Run tests
         run: cargo test
