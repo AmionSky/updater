@@ -1,7 +1,6 @@
 [package]
 name = "updater-bin"
-version = "0.3.4"
-authors = ["Csányi István <csanyistvan02@gmail.com>"]
+version = "0.3.5"
 edition = "2021"
 
 [dependencies]
@@ -13,4 +12,4 @@ semver = "1"
 simplelog  = "0.12"
 
 [target.'cfg(target_os="windows")'.dependencies]
-windows-sys = { version = "0.45.0", features = ["Win32_Foundation", "Win32_System_Console"] }
+windows-sys = { version = "0.48.0", features = ["Win32_Foundation", "Win32_System_Console"] }
