@@ -180,7 +180,7 @@ mod basic_app_ui {
             nwg::Window::builder()
                 .flags(nwg::WindowFlags::WINDOW | nwg::WindowFlags::VISIBLE)
                 .size((360, 63))
-                .position((300, 300))
+                .center(true)
                 .build(&mut data.window)?;
 
             nwg::Label::builder()
