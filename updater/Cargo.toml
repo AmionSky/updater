@@ -22,7 +22,7 @@ tempfile = "3"
 serde = { version = "1", features = ["derive"] }
 json = { package = "serde_json", version = "1" }
 # Extract
-zip = { version = "0.6", optional = true, default-features = false, features = ["bzip2", "deflate"] }
+zip = { version = "1.2", optional = true, default-features = false, features = ["bzip2", "deflate"] }
 flate2 = { version = "1", optional = true }
 tar = { version = "0.4", optional = true }
 # Windowing
